@@ -275,80 +275,50 @@ void themHocSinh(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], 
     printf("Tổng số học sinh hiện tại: %d\n", *n);
 }
 
-// 2. Hiển thị tất cả học sinh
-void hienThiTatCa(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int n)
+// Hiển thị danh sách học sinh theo mode:
+// mode = 1: Tất cả học sinh
+// mode = 2: Học sinh nam
+// mode = 3: Học sinh nữ
+void hienThiDanhSach(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int n, int mode)
 {
-    printf("\n====================== DANH SÁCH HỌC SINH ======================\n");
-    inTieuDeBang();
-
-    for (int i = 0; i < n; i++)
+    if (mode == 1)
     {
-        inDongHocSinh(i + 1, ten[i], tuoi[i], gioiTinh[i], diem[i]);
+        printf("\n====================== DANH SÁCH HỌC SINH ======================\n");
     }
-
-    printf("================================================================\n");
-}
-
-// 3. Tính điểm trung bình của học sinh nam
-void tinhDiemTrungBinhNam(char gioiTinh[][10], float diem[], int n)
-{
-    float tong = 0;
-    int dem = 0;
-
-    for (int i = 0; i < n; i++)
+    else if (mode == 2)
     {
-        if (laNam(gioiTinh[i]))
-        {
-            tong += diem[i];
-            dem++;
-        }
+        printf("\n==================== DANH SÁCH HỌC SINH NAM ====================\n");
     }
-
-    if (dem == 0)
+    else if (mode == 3)
     {
-        printf("\nKhông có học sinh nam!\n");
+        printf("\n==================== DANH SÁCH HỌC SINH NỮ ====================\n");
     }
     else
     {
-        printf("\nĐiểm trung bình của học sinh nam: %.2f\n", tong / dem);
-    }
-}
-
-// 4. Tính điểm trung bình của học sinh nữ
-void tinhDiemTrungBinhNu(char gioiTinh[][10], float diem[], int n)
-{
-    float tong = 0;
-    int dem = 0;
-
-    for (int i = 0; i < n; i++)
-    {
-        if (laNu(gioiTinh[i]))
-        {
-            tong += diem[i];
-            dem++;
-        }
+        printf("\nChế độ hiển thị không hợp lệ!\n");
+        return;
     }
 
-    if (dem == 0)
-    {
-        printf("\nKhông có học sinh nữ!\n");
-    }
-    else
-    {
-        printf("\nĐiểm trung bình của học sinh nữ: %.2f\n", tong / dem);
-    }
-}
-
-// 5. Hiển thị danh sách học sinh nữ
-void hienThiDanhSachNu(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int n)
-{
-    printf("\n==================== DANH SÁCH HỌC SINH NỮ ====================\n");
     inTieuDeBang();
 
     int dem = 0;
     for (int i = 0; i < n; i++)
     {
-        if (laNu(gioiTinh[i]))
+        int thoaMan = 0;
+        if (mode == 1)
+        {
+            thoaMan = 1;
+        }
+        else if (mode == 2 && laNam(gioiTinh[i]))
+        {
+            thoaMan = 1;
+        }
+        else if (mode == 3 && laNu(gioiTinh[i]))
+        {
+            thoaMan = 1;
+        }
+
+        if (thoaMan)
         {
             dem++;
             inDongHocSinh(dem, ten[i], tuoi[i], gioiTinh[i], diem[i]);
@@ -357,52 +327,91 @@ void hienThiDanhSachNu(char ten[][50], int tuoi[], char gioiTinh[][10], float di
 
     if (dem == 0)
     {
-        printf("Không có học sinh nữ nào trong danh sách!\n");
-    }
-
-    printf("================================================================\n");
-}
-
-// 6. Hiển thị danh sách học sinh nam
-void hienThiDanhSachNam(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int n)
-{
-    printf("\n==================== DANH SÁCH HỌC SINH NAM ====================\n");
-    inTieuDeBang();
-
-    int dem = 0;
-    for (int i = 0; i < n; i++)
-    {
-        if (laNam(gioiTinh[i]))
+        if (mode == 1)
         {
-            dem++;
-            inDongHocSinh(dem, ten[i], tuoi[i], gioiTinh[i], diem[i]);
+            printf("Danh sách học sinh trống!\n");
+        }
+        else if (mode == 2)
+        {
+            printf("Không có học sinh nam nào trong danh sách!\n");
+        }
+        else if (mode == 3)
+        {
+            printf("Không có học sinh nữ nào trong danh sách!\n");
         }
     }
 
-    if (dem == 0)
-    {
-        printf("Không có học sinh nam nào trong danh sách!\n");
-    }
-
     printf("================================================================\n");
 }
 
-// Tính điểm trung bình của cả lớp
-void tinhDiemTrungBinhCaLop(float diem[], int n)
+// Tính điểm trung bình theo mode:
+// mode = 1: Cả lớp
+// mode = 2: Học sinh nam
+// mode = 3: Học sinh nữ
+void tinhDiemTrungBinh(char gioiTinh[][10], float diem[], int n, int mode)
 {
     if (n == 0)
     {
-        printf("\nKhông có học sinh trong danh sách!\n");
+        printf("\nDanh sách học sinh trống!\n");
         return;
     }
 
     float tong = 0;
+    int dem = 0;
+
     for (int i = 0; i < n; i++)
     {
-        tong += diem[i];
+        int thoaMan = 0;
+        if (mode == 1)
+        {
+            thoaMan = 1;
+        }
+        else if (mode == 2 && laNam(gioiTinh[i]))
+        {
+            thoaMan = 1;
+        }
+        else if (mode == 3 && laNu(gioiTinh[i]))
+        {
+            thoaMan = 1;
+        }
+
+        if (thoaMan)
+        {
+            tong += diem[i];
+            dem++;
+        }
     }
 
-    printf("\nĐiểm trung bình của cả lớp: %.2f\n", tong / n);
+    if (dem == 0)
+    {
+        if (mode == 2)
+        {
+            printf("\nKhông có học sinh nam!\n");
+        }
+        else if (mode == 3)
+        {
+            printf("\nKhông có học sinh nữ!\n");
+        }
+        else
+        {
+            printf("\nKhông có dữ liệu để tính!\n");
+        }
+    }
+    else
+    {
+        if (mode == 1)
+        {
+            printf("\nĐiểm trung bình của cả lớp: %.2f\n", tong / dem);
+        }
+        else if (mode == 2)
+        {
+            printf("\nĐiểm trung bình của học sinh nam: %.2f\n", tong / dem);
+        }
+        else if (mode == 3)
+        {
+            printf("\nĐiểm trung bình của học sinh nữ: %.2f\n", tong / dem);
+        }
+    }
 }
 
 // In menu ra màn hình
@@ -456,30 +465,46 @@ int main()
 
         switch (chon)
         {
+        // 1. Thêm học sinh vào danh sách
         case 1:
             themHocSinh(ten, tuoi, gioiTinh, diem, &n);
             break;
+
+        // 2. In ra thông tin tất cả học sinh (mode = 1)
         case 2:
-            hienThiTatCa(ten, tuoi, gioiTinh, diem, n);
+            hienThiDanhSach(ten, tuoi, gioiTinh, diem, n, 1);
             break;
+
+        // 3. In ra danh sách học sinh nữ (mode = 3)
         case 3:
-            hienThiDanhSachNu(ten, tuoi, gioiTinh, diem, n);
+            hienThiDanhSach(ten, tuoi, gioiTinh, diem, n, 3);
             break;
+
+        // 4. In ra danh sách học sinh nam (mode = 2)
         case 4:
-            hienThiDanhSachNam(ten, tuoi, gioiTinh, diem, n);
+            hienThiDanhSach(ten, tuoi, gioiTinh, diem, n, 2);
             break;
+
+        // 5. Tính điểm trung bình của cả lớp (mode = 1)
         case 5:
-            tinhDiemTrungBinhCaLop(diem, n);
+            tinhDiemTrungBinh(gioiTinh, diem, n, 1);
             break;
+
+        // 6. Tính điểm trung bình của học sinh nữ (mode = 3)
         case 6:
-            tinhDiemTrungBinhNu(gioiTinh, diem, n);
+            tinhDiemTrungBinh(gioiTinh, diem, n, 3);
             break;
+
+        // 7. Tính điểm trung bình của học sinh nam (mode = 2)
         case 7:
-            tinhDiemTrungBinhNam(gioiTinh, diem, n);
+            tinhDiemTrungBinh(gioiTinh, diem, n, 2);
             break;
+
+        // 8. Thoát chương trình
         case 8:
             printf("\nĐã thoát chương trình!\n");
             break;
+
         default:
             printf("\nLựa chọn không hợp lệ!\n");
             printf("Vui lòng chọn từ 1 đến 8.\n");
