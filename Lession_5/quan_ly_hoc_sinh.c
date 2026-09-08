@@ -173,22 +173,23 @@ void nhap1HocSinh(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[],
 }
 
 // Tính số ký tự hiển thị trực quan của chuỗi UTF-8 (bỏ qua continuation bytes)
-int demKyTuUTF8(const char *s)
+int demKyTuUTF8(const char s[])
 {
     int count = 0;
-    while (*s)
+    int i = 0;
+    while (s[i] != '\0')
     {
-        if ((*s & 0xC0) != 0x80)
+        if ((s[i] & 0xC0) != 0x80)
         {
             count++;
         }
-        s++;
+        i++;
     }
     return count;
 }
 
 // In chuỗi có căn lề trái chuẩn theo số ký tự hiển thị thực tế
-void inCanTraiUTF8(const char *s, int doRong)
+void inCanTraiUTF8(const char s[], int doRong)
 {
     printf("%s", s);
     int len = demKyTuUTF8(s);
@@ -224,16 +225,16 @@ void inDongHocSinh(int stt, const char ten[], int tuoi, const char gioiTinh[], f
 // CÁC CHỨC NĂNG CHÍNH CỦA MENU
 // =====================================================
 
-// 1. Thêm học sinh
-void themHocSinh(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int *n)
+// 1. Thêm học sinh (trả về số lượng học sinh mới sau khi thêm)
+int themHocSinh(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], int n)
 {
     int soLuongThem;
 
-    if (*n >= MAX_HS)
+    if (n >= MAX_HS)
     {
         printf("\nDanh sách đã đủ %d học sinh!\n", MAX_HS);
         printf("Không thể thêm học sinh.\n");
-        return;
+        return n;
     }
 
     do
@@ -254,25 +255,27 @@ void themHocSinh(char ten[][50], int tuoi[], char gioiTinh[][10], float diem[], 
             {
                 printf("Số lượng phải lớn hơn 0!\n");
             }
-            else if (*n + soLuongThem > MAX_HS)
+            else if (n + soLuongThem > MAX_HS)
             {
                 printf("Không thể thêm %d học sinh!\n", soLuongThem);
-                printf("Hiện tại có %d học sinh.\n", *n);
-                printf("Chỉ có thể thêm tối đa %d học sinh.\n", MAX_HS - *n);
+                printf("Hiện tại có %d học sinh.\n", n);
+                printf("Chỉ có thể thêm tối đa %d học sinh.\n", MAX_HS - n);
             }
         }
 
-    } while (soLuongThem <= 0 || *n + soLuongThem > MAX_HS);
+    } while (soLuongThem <= 0 || n + soLuongThem > MAX_HS);
 
-    for (int i = *n; i < *n + soLuongThem; i++)
+    for (int i = n; i < n + soLuongThem; i++)
     {
         nhap1HocSinh(ten, tuoi, gioiTinh, diem, i);
     }
 
-    *n = *n + soLuongThem;
+    n = n + soLuongThem;
 
     printf("\nĐã thêm %d học sinh thành công!\n", soLuongThem);
-    printf("Tổng số học sinh hiện tại: %d\n", *n);
+    printf("Tổng số học sinh hiện tại: %d\n", n);
+
+    return n;
 }
 
 // Hiển thị danh sách học sinh theo mode:
@@ -467,7 +470,7 @@ int main()
         {
         // 1. Thêm học sinh vào danh sách
         case 1:
-            themHocSinh(ten, tuoi, gioiTinh, diem, &n);
+            n = themHocSinh(ten, tuoi, gioiTinh, diem, n);
             break;
 
         // 2. In ra thông tin tất cả học sinh (mode = 1)

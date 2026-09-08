@@ -8,7 +8,7 @@ void xoaBoDem()
 }
 
 // Hàm nhập số thực và kiểm tra tính hợp lệ
-float nhapSo(const char *thongBao)
+float nhapSo(const char thongBao[])
 {
     float so;
     while (1)
