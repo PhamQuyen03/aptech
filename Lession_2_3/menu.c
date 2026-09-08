@@ -76,7 +76,7 @@ int main() {
             }
             case 5: {
                 // Tìm ước chung lớn nhất (ƯCLN)
-                int a, b, gcd;
+                int a, b, gcd = 1;
                 printf("Nhập 2 số a, b: ");
                 scanf("%d %d", &a, &b);
                 int min = (a < b) ? a : b;
@@ -91,7 +91,7 @@ int main() {
             }
             case 6: {
                 // Tìm bội chung nhỏ nhất (BCNN) = a*b / ƯCLN
-                int a, b, gcd, lcm;
+                int a, b, gcd = 1, lcm;
                 printf("Nhập 2 số a, b: ");
                 scanf("%d %d", &a, &b);
                 int min = (a < b) ? a : b;

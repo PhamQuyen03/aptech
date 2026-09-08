@@ -67,7 +67,7 @@ int main()
 
     // Tìm giá trị trong mảng
     int x;
-    bool notFound = true;
+    int notFound = 1;
 
     printf("\n\nNhập giá trị muốn tìm: ");
     scanf("%d", &x);
@@ -77,7 +77,7 @@ int main()
         if (arr[i] == x)
         {
             printf("Giá trị %d nằm ở vị trí arr[%d]\n", x, i);
-            notFound = false;
+            notFound = 0;
         }
     }
 
