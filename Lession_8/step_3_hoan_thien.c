@@ -1,11 +1,8 @@
 /*
- * BÀI TẬP LỚN - HỆ THỐNG QUẢN LÝ THƯ VIỆN
- * GIAI ĐOẠN 3 (BƯỚC HOÀN THÀNH): STEP 1 + STEP 2 + 1.4 Menu Sinh viên
- *
- * Nội dung mới của giai đoạn này (lấy nguyên code STEP 1 và STEP 2 làm tiếp):
- * - Menu Sinh viên: xem danh sách sách (thông tin cơ bản), tìm kiếm sách
- * - Danh sách sách đang mượn CỦA TÔI (lọc theo ID của sinh viên đang đăng nhập)
- * - Hoàn thiện đầy đủ 3 vai trò: Admin, Staff (Thủ thư), Sinh viên
+ * BAI TAP LON - HE THONG QUAN LY THU VIEN
+ * GIAI DOAN 3 (BUOC HOAN THIEN): STEP 1 + STEP 2 + 1.4 Menu Sinh vien
+ * Noi dung moi: menu Sinh vien xem danh sach sach, tim kiem sach
+ * va danh sach sach dang muon CUA TOI (lay nguyen code STEP 1, 2 lam tiep)
  */
 
 #include <stdio.h>
@@ -13,902 +10,985 @@
 #include <string.h>
 #include <ctype.h>
 
-// 1 = Admin, 2 = Staff (Thủ thư), 3 = SinhVien
-#define VAI_TRO_ADMIN 1
-#define VAI_TRO_STAFF 2
-#define VAI_TRO_SINH_VIEN 3
-#define MAT_KHAU_MAC_DINH "123456"
-#define TEN_DANG_NHAP_MAC_DINH "admin"
-
-typedef struct NguoiDung
+typedef struct TaiKhoan
 {
-    int id;                 // ID tự động tăng, duy nhất cho từng tài khoản
-    char ten_dang_nhap[50]; // Tên dùng để đăng nhập, không được trùng
-    char mat_khau[50];      // Mật khẩu của tài khoản
-    int vai_tro;
-} NguoiDung;
+    int id;
+    char username[50];
+    char password[50];
+    int role; // 1 = Admin, 2 = Staff (Thu thu), 3 = Sinh vien
+} TaiKhoan;
 
 typedef struct Sach
 {
-    char ma_sach[20];   // Mã sách, duy nhất trong thư viện
-    char ten_sach[100]; // Tên cuốn sách
-    char tac_gia[50];   // Tác giả
-    int nam_xb;         // Năm xuất bản
-    int tong_sl;        // Tổng số lượng bản sách
-    int da_muon;        // Số lượng bản đã cho sinh viên mượn
+    char maSach[20];  // ma sach, duy nhat trong thu vien
+    char tenSach[100];
+    char tacGia[50];
+    int namXb;
+    int tongSl;  // tong so luong ban sach
+    int daMuon;  // so luong ban da cho muon
 } Sach;
 
 typedef struct PhieuMuon
 {
-    int id_phieu;      // Số phiếu tự động tăng, duy nhất cho từng lần mượn
-    int id_nguoi_dung; // ID của sinh viên mượn sách (liên kết mảng tài khoản)
-    char ma_sach[20];  // Mã sách được mượn (liên kết mảng sách)
-    int trang_thai;    // 0 = đang mượn, 1 = đã trả
+    int idPhieu;      // so phieu tu tang
+    int idNguoiDung;  // id sinh vien muon sach
+    char maSach[20];
+    int trangThai; // 0 = dang muon, 1 = da tra
 } PhieuMuon;
 
-/* ===== BIẾN TOÀN CỤC: quản lý mảng động tài khoản ===== */
-NguoiDung *ds_nguoi_dung = NULL; // Con trỏ trỏ đến mảng động các tài khoản
-int so_luong_nguoi_dung = 0;     // Số tài khoản hiện có trong mảng
-int id_nguoi_dung_tiep_theo = 1; // Biến tạo ID tự tăng để ID mới luôn là duy nhất
+void themTkMacDinh(TaiKhoan *danhSachTK, int *soluongTK);
+void dangnhap(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkhientai);
+void hienThiDsTk(TaiKhoan *danhSachTK, int soluongTK);
+void hienThiDsSv(TaiKhoan *danhSachTK, int soluongTK, PhieuMuon *danhSachPhieu, int soluongPhieu);
+TaiKhoan *themTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, int *idTiepTheo);
+TaiKhoan *xoaTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, TaiKhoan *tkHienTai);
+void suaTk(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkHienTai);
+void resetMatKhau(TaiKhoan *danhSachTK, int soluongTK);
+char *tenVaiTro(int role);
+int timTkTheoTen(TaiKhoan *danhSachTK, int soluongTK, char *ten);
+TaiKhoan *hienThiAdminMenu(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK,
+                           int *idTiepTheo, PhieuMuon *danhSachPhieu, int soluongPhieu,
+                           TaiKhoan *tkHienTai);
 
-/* ===== BIẾN TOÀN CỤC: quản lý mảng động sách ===== */
-Sach *ds_sach = NULL; // Con trỏ trỏ đến mảng động các cuốn sách
-int so_luong_sach = 0;
+Sach *themSach(Sach *danhSachSach, int *soluongSach, int *maxSizeSach);
+void hienThiDsSach(Sach *danhSachSach, int soluongSach);
+void capNhatSach(Sach *danhSachSach, int soluongSach);
+Sach *xoaSach(Sach *danhSachSach, int *soluongSach, int *maxSizeSach);
+void timKiemSach(Sach *danhSachSach, int soluongSach);
+void sapXepSach(Sach *danhSachSach, int soluongSach);
+PhieuMuon *muonSach(PhieuMuon *danhSachPhieu, int *soluongPhieu, int *maxSizePhieu,
+                    int *idPhieuTiepTheo, TaiKhoan *danhSachTK, int soluongTK,
+                    Sach *danhSachSach, int soluongSach);
+void traSach(PhieuMuon *danhSachPhieu, int soluongPhieu, Sach *danhSachSach,
+             int soluongSach, TaiKhoan *danhSachTK, int soluongTK);
+void hienThiSachDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu,
+                         TaiKhoan *danhSachTK, int soluongTK,
+                         Sach *danhSachSach, int soluongSach);
+int timTkTheoId(TaiKhoan *danhSachTK, int soluongTK, int id);
+int timSachTheoMa(Sach *danhSachSach, int soluongSach, char *ma);
+int timPhieuDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu, int idSv, char *maSach);
+int tenChuaTuKhoa(char *ten, char *tuKhoa);
+Sach *hienThiStaffMenu(Sach *danhSachSach, int *soluongSach, int *maxSizeSach,
+                       PhieuMuon **danhSachPhieu, int *soluongPhieu, int *maxSizePhieu,
+                       int *idPhieuTiepTheo, TaiKhoan *danhSachTK, int soluongTK,
+                       TaiKhoan *tkHienTai);
+void hienThiSinhVienMenu(Sach *danhSachSach, int soluongSach,
+                         PhieuMuon *danhSachPhieu, int soluongPhieu, TaiKhoan *tkHienTai);
+void sachToiDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu,
+                     Sach *danhSachSach, int soluongSach, TaiKhoan *tkHienTai);
 
-/* ===== BIẾN TOÀN CỤC: quản lý mảng động phiếu mượn ===== */
-PhieuMuon *ds_phieu_muon = NULL; // Con trỏ trỏ đến mảng động các phiếu mượn
-int so_luong_phieu = 0;
-int id_phieu_tiep_theo = 1; // Biến tạo số phiếu tự tăng
-
-/* ===== BIẾN TOÀN CỤC: trạng thái đăng nhập của chương trình ===== */
-int id_dang_nhap = -1; // ID của tài khoản đang đăng nhập (-1 = chưa đăng nhập)
-int vai_tro_dang_nhap; // Vai trò của tài khoản đang đăng nhập
-int da_dang_nhap = 0;  // Cờ trạng thái: 1 = đã đăng nhập, 0 = chưa
-
-/* ==================== KHAI BÁO TIỀN CÁC HÀM ==================== */
-
-/* Nhóm hàm tiện ích */
-void xoa_bo_dem();
-void nhap_chuoi(const char *thong_bao, char *s, int kich_thuoc);
-int nhap_so_nguyen(const char *thong_bao);
-int xac_nhan(const char *thong_bao);
-const char *ten_vai_tro(int vai_tro);
-int ten_chua_tu_khoa(const char *ten, const char *tu_khoa);
-
-/* Nhóm hàm tìm kiếm */
-int tim_nguoi_dung_theo_ten(NguoiDung *ds, int n, const char *ten);
-int tim_nguoi_dung_theo_id(NguoiDung *ds, int n, int id);
-int tim_sach_theo_ma(Sach *ds, int n, const char *ma);
-int tim_phieu_dang_muon(int id_sv, const char *ma);
-
-/* Nhóm hàm nghiệp vụ Admin */
-void hien_thi_danh_sach_tai_khoan();
-void them_tai_khoan();
-void xoa_tai_khoan();
-void sua_tai_khoan();
-void reset_mat_khau();
-
-/* Nhóm hàm nghiệp vụ Staff */
-void them_sach();
-void hien_thi_danh_sach_sach();
-void cap_nhat_sach();
-void xoa_sach();
-void tim_kiem_sach();
-void sap_xep_sach();
-void muon_sach();
-void tra_sach();
-void hien_thi_sach_dang_muon();
-
-/* Nhóm hàm nghiệp vụ Sinh viên */
-void hien_thi_sach_co_ban();
-void sach_toi_dang_muon();
-
-/* Nhóm hàm quản lý luồng chính */
-void khoi_tao_du_lieu();
-void giai_phong_bo_nho();
-void dang_nhap();
-void menu_admin();
-void menu_staff();
-void menu_sinh_vien();
-
-/* ==================== NHÓM HÀM TIỆN ÍCH ==================== */
-
-// Đọc bỏ ký tự '\n' dư thừa trong bộ đệm stdin (chống trôi lệnh cho fgets)
-void xoa_bo_dem()
+int main()
 {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF)
+    int soluongTK = 0;
+    int maxSizeTK = 5;
+    int idTiepTheo = 3; // 2 tai khoan mac dinh da dung id 1 va 2
+    int soluongSach = 0;
+    int maxSizeSach = 5;
+    int soluongPhieu = 0;
+    int maxSizePhieu = 5;
+    int idPhieuTiepTheo = 1;
+    Sach *danhSachSach;
+    PhieuMuon *danhSachPhieu;
+
+    TaiKhoan *danhSachTK;
+    TaiKhoan tkHienTai;
+    tkHienTai.role = -1; // role = -1 nghia la CHUA dang nhap
+
+    danhSachTK = (TaiKhoan *)malloc(maxSizeTK * sizeof(TaiKhoan));
+    danhSachSach = (Sach *)malloc(maxSizeSach * sizeof(Sach));
+    danhSachPhieu = (PhieuMuon *)malloc(maxSizePhieu * sizeof(PhieuMuon));
+    themTkMacDinh(danhSachTK, &soluongTK);
+
+    printf("Chao mung den voi He thong Quan ly Thu vien!\n");
+
+    while (1)
     {
-    }
-}
-
-// In câu hỏi, đọc một chuỗi có thể chứa dấu cách và tự xóa '\n' do fgets để lại
-void nhap_chuoi(const char *thong_bao, char *s, int kich_thuoc)
-{
-    printf("%s", thong_bao);
-    if (fgets(s, kich_thuoc, stdin) != NULL)
-    {
-        s[strcspn(s, "\n")] = '\0'; // fgets luôn để lại '\n' cuối chuỗi nên phải cắt bỏ
-    }
-    else
-    {
-        s[0] = '\0'; // Hết dữ liệu nhập thì trả về chuỗi rỗng
-    }
-}
-
-// In câu hỏi, đọc một số nguyên; bắt nhập lại khi người dùng gõ không phải số
-int nhap_so_nguyen(const char *thong_bao)
-{
-    int so;
-    printf("%s", thong_bao);
-    int kq = scanf("%d", &so);
-    if (kq == EOF)
-    {
-        printf("\nHết dữ liệu nhập, thoát chương trình.\n");
-        giai_phong_bo_nho();
-        exit(0);
-    }
-    while (kq != 1) // scanf trả về 0 khi dữ liệu vào không phải số
-    {
-        xoa_bo_dem(); // Phải đọc bỏ dữ liệu sai rồi mới cho nhập lại
-        printf("Lỗi: Vui lòng nhập một số nguyên: ");
-        kq = scanf("%d", &so);
-    }
-    xoa_bo_dem(); // scanf để lại '\n' trong bộ đệm nên phải đọc bỏ trước khi gọi fgets
-    return so;
-}
-
-// Hỏi người dùng câu hỏi xác nhận, trả về 1 nếu đồng ý (Y/y)
-int xac_nhan(const char *thong_bao)
-{
-    char tra_loi[10];
-    nhap_chuoi(thong_bao, tra_loi, sizeof(tra_loi));
-    return strcmp(tra_loi, "Y") == 0 || strcmp(tra_loi, "y") == 0;
-}
-
-// Chuyển mã vai trò (1/2/3) thành chuỗi tên dễ đọc để in ra màn hình
-const char *ten_vai_tro(int vai_tro)
-{
-    switch (vai_tro)
-    {
-    case VAI_TRO_ADMIN:
-        return "Admin";
-    case VAI_TRO_STAFF:
-        return "Thủ thư";
-    case VAI_TRO_SINH_VIEN:
-        return "Sinh viên";
-    default:
-        return "Không hợp lệ";
-    }
-}
-
-// Kiểm tra tên sách có chứa từ khóa hay không (không phân biệt hoa/thường)
-int ten_chua_tu_khoa(const char *ten, const char *tu_khoa)
-{
-    char ten_thuong[150], tu_khoa_thuong[150];
-    int i;
-
-    // Chuyển cả tên sách và từ khóa về chữ thường rồi mới strstr để "Cơ bản" khớp với "cơ bản"
-    for (i = 0; ten[i] != '\0' && i < 149; i++)
-    {
-        ten_thuong[i] = tolower((unsigned char)ten[i]);
-    }
-    ten_thuong[i] = '\0';
-
-    for (i = 0; tu_khoa[i] != '\0' && i < 149; i++)
-    {
-        tu_khoa_thuong[i] = tolower((unsigned char)tu_khoa[i]);
-    }
-    tu_khoa_thuong[i] = '\0';
-
-    return strstr(ten_thuong, tu_khoa_thuong) != NULL;
-}
-
-/* ==================== NHÓM HÀM TÌM KIẾM ==================== */
-
-// Tìm vị trí tài khoản theo tên đăng nhập. Trả về index (0..n-1) hoặc -1 nếu không thấy
-int tim_nguoi_dung_theo_ten(NguoiDung *ds, int n, const char *ten)
-{
-    for (int i = 0; i < n; i++)
-    {
-        if (strcmp(ds[i].ten_dang_nhap, ten) == 0)
+        // Chua dang nhap thi luon quay lai man hinh dang nhap
+        if (tkHienTai.role == -1)
         {
-            return i;
+            dangnhap(danhSachTK, soluongTK, &tkHienTai);
+            continue;
+        }
+
+        switch (tkHienTai.role)
+        {
+        case 1: // Admin
+            danhSachTK = hienThiAdminMenu(danhSachTK, &soluongTK, &maxSizeTK,
+                                          &idTiepTheo, danhSachPhieu, soluongPhieu,
+                                          &tkHienTai);
+            break;
+        case 2: // Thu thu
+            danhSachSach = hienThiStaffMenu(danhSachSach, &soluongSach, &maxSizeSach,
+                                            &danhSachPhieu, &soluongPhieu, &maxSizePhieu,
+                                            &idPhieuTiepTheo, danhSachTK, soluongTK,
+                                            &tkHienTai);
+            break;
+        case 3: // Sinh vien
+            hienThiSinhVienMenu(danhSachSach, soluongSach, danhSachPhieu, soluongPhieu,
+                                &tkHienTai);
+            break;
+        }
+
+        // role = -2 nghia la nguoi dung chon "Thoat chuong trinh" trong menu
+        if (tkHienTai.role == -2)
+        {
+            break;
         }
     }
-    return -1;
+
+    free(danhSachTK);
+    free(danhSachSach);
+    free(danhSachPhieu);
+    printf("Da giai phong bo nho. Tam biet!\n");
+    return 0;
 }
 
-// Tìm vị trí tài khoản theo ID. Trả về index (0..n-1) hoặc -1 nếu không thấy
-int tim_nguoi_dung_theo_id(NguoiDung *ds, int n, int id)
+TaiKhoan *hienThiAdminMenu(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK,
+                           int *idTiepTheo, PhieuMuon *danhSachPhieu, int soluongPhieu,
+                           TaiKhoan *tkHienTai)
 {
-    for (int i = 0; i < n; i++)
-    {
-        if (ds[i].id == id)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-// Tìm vị trí cuốn sách theo mã sách. Trả về index (0..n-1) hoặc -1 nếu không thấy
-int tim_sach_theo_ma(Sach *ds, int n, const char *ma)
-{
-    for (int i = 0; i < n; i++)
-    {
-        if (strcmp(ds[i].ma_sach, ma) == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-// Tìm phiếu mượn "đang mượn" (trạng thái 0) của một sinh viên cho một cuốn sách cụ thể.
-// Trả về index trong mảng phiếu hoặc -1 nếu sinh viên này không mượn cuốn sách đó
-int tim_phieu_dang_muon(int id_sv, const char *ma)
-{
-    for (int i = 0; i < so_luong_phieu; i++)
-    {
-        if (ds_phieu_muon[i].id_nguoi_dung == id_sv &&
-            strcmp(ds_phieu_muon[i].ma_sach, ma) == 0 &&
-            ds_phieu_muon[i].trang_thai == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/* ==================== NHÓM HÀM NGHIỆP VỤ ADMIN ==================== */
-
-// 1.2.1 Hiển thị danh sách toàn bộ tài khoản (không hiển thị mật khẩu)
-void hien_thi_danh_sach_tai_khoan()
-{
-    if (so_luong_nguoi_dung == 0)
-    {
-        printf("Chưa có tài khoản nào trong hệ thống.\n");
-        return;
-    }
-
-    printf("\n====================== DANH SÁCH TÀI KHOẢN ======================\n");
-    printf("%-5s %-25s %-15s\n", "ID", "Tên đăng nhập", "Vai trò");
-
-    for (int i = 0; i < so_luong_nguoi_dung; i++)
-    {
-        printf("%-5d %-25s %-15s\n",
-               ds_nguoi_dung[i].id,
-               ds_nguoi_dung[i].ten_dang_nhap,
-               ten_vai_tro(ds_nguoi_dung[i].vai_tro));
-    }
-}
-
-// 1.2.2 Thêm tài khoản mới (tên đăng nhập bắt buộc phải duy nhất)
-void them_tai_khoan()
-{
-    NguoiDung moi;
-    char ten[50];
-    int vai_tro;
-    NguoiDung *temp;
-
-    nhap_chuoi("Nhập tên đăng nhập: ", ten, sizeof(ten));
-
-    if (tim_nguoi_dung_theo_ten(ds_nguoi_dung, so_luong_nguoi_dung, ten) != -1)
-    {
-        printf("Lỗi: Tên đăng nhập này đã được sử dụng.\n");
-        return; // Trùng tên thì hủy ngay thao tác thêm
-    }
-
-    nhap_chuoi("Nhập mật khẩu: ", moi.mat_khau, sizeof(moi.mat_khau));
-
+    int choice = 0;
     do
     {
-        vai_tro = nhap_so_nguyen("Nhập vai trò (1 = Admin, 2 = Staff, 3 = SinhVien): ");
-        if (vai_tro < 1 || vai_tro > 3)
+        printf("\n===== MENU ADMIN =====\n");
+        printf("1. Hien thi danh sach tai khoan\n");
+        printf("2. Hien thi danh sach sinh vien\n");
+        printf("3. Them tai khoan\n");
+        printf("4. Xoa tai khoan\n");
+        printf("5. Sua thong tin tai khoan\n");
+        printf("6. Reset mat khau\n");
+        printf("7. Dang xuat\n");
+        printf("0. Thoat chuong trinh\n");
+        printf("Moi ban nhap vao lua chon: ");
+        if (scanf("%d", &choice) != 1)
         {
-            printf("Lỗi: Vai trò chỉ được chọn 1, 2 hoặc 3.\n");
-        }
-    } while (vai_tro < 1 || vai_tro > 3);
-
-    // Cấp phát thêm 1 ô nhớ cho mảng động trước khi thêm phần tử mới
-    temp = realloc(ds_nguoi_dung, (so_luong_nguoi_dung + 1) * sizeof(NguoiDung));
-    if (temp == NULL)
-    {
-        printf("Lỗi: Không đủ bộ nhớ để thêm tài khoản!\n");
-        return;
-    }
-    ds_nguoi_dung = temp; // Chỉ gán lại con trỏ khi realloc thành công
-
-    moi.id = id_nguoi_dung_tiep_theo++; // Gán ID tự tăng, sau đó tăng biến đếm ID cho lần thêm kế tiếp
-    strcpy(moi.ten_dang_nhap, ten);
-    moi.vai_tro = vai_tro;
-
-    ds_nguoi_dung[so_luong_nguoi_dung] = moi; // Thêm vào cuối mảng
-    so_luong_nguoi_dung++;
-
-    printf("Đã thêm tài khoản \"%s\" (ID = %d) thành công!\n", moi.ten_dang_nhap, moi.id);
-}
-
-// 1.2.3 Xóa tài khoản (không cho xóa Admin gốc và tài khoản đang đăng nhập)
-void xoa_tai_khoan()
-{
-    char ten[50];
-    char thong_bao[200];
-    int vt;
-    NguoiDung *temp;
-
-    nhap_chuoi("Nhập tên đăng nhập của tài khoản cần xóa: ", ten, sizeof(ten));
-
-    vt = tim_nguoi_dung_theo_ten(ds_nguoi_dung, so_luong_nguoi_dung, ten);
-    if (vt == -1)
-    {
-        printf("Lỗi: Không tìm thấy tài khoản.\n");
-        return;
-    }
-
-    if (ds_nguoi_dung[vt].id == 1)
-    {
-        printf("Lỗi: Không thể xóa tài khoản Admin gốc của hệ thống.\n");
-        return;
-    }
-
-    if (ds_nguoi_dung[vt].id == id_dang_nhap)
-    {
-        printf("Lỗi: Không thể tự xóa tài khoản bạn đang đăng nhập.\n");
-        return;
-    }
-
-    // Ghép câu hỏi xác nhận đúng theo mẫu: "... người dùng ... có vai trò ... (Y/N)?"
-    snprintf(thong_bao, sizeof(thong_bao),
-             "Bạn có chắc muốn xóa người dùng %s có vai trò %s (Y/N)? ",
-             ds_nguoi_dung[vt].ten_dang_nhap, ten_vai_tro(ds_nguoi_dung[vt].vai_tro));
-
-    if (!xac_nhan(thong_bao))
-    {
-        printf("Đã hủy việc xóa tài khoản.\n");
-        return;
-    }
-
-    // Dời các phần tử phía sau lên 1 vị trí để lấp chỗ trống của phần tử bị xóa
-    for (int i = vt; i < so_luong_nguoi_dung - 1; i++)
-    {
-        ds_nguoi_dung[i] = ds_nguoi_dung[i + 1];
-    }
-    so_luong_nguoi_dung--;
-
-    if (so_luong_nguoi_dung == 0)
-    {
-        free(ds_nguoi_dung); // Xóa hết phần tử thì trả cả vùng nhớ về cho hệ thống
-        ds_nguoi_dung = NULL;
-    }
-    else
-    {
-        // Thu nhỏ mảng động cho đúng số phần tử mới để tiết kiệm bộ nhớ
-        temp = realloc(ds_nguoi_dung, so_luong_nguoi_dung * sizeof(NguoiDung));
-        if (temp != NULL)
-        {
-            ds_nguoi_dung = temp;
-        }
-    }
-
-    printf("Đã xóa tài khoản thành công!\n");
-}
-
-// 1.2.4 Sửa thông tin tài khoản (chọn sửa vai trò hoặc sửa mật khẩu)
-void sua_tai_khoan()
-{
-    char ten[50];
-    int vt, lua_chon, vai_tro_moi;
-
-    nhap_chuoi("Nhập tên đăng nhập của tài khoản cần sửa: ", ten, sizeof(ten));
-
-    vt = tim_nguoi_dung_theo_ten(ds_nguoi_dung, so_luong_nguoi_dung, ten);
-    if (vt == -1)
-    {
-        printf("Lỗi: Không tìm thấy tài khoản.\n");
-        return;
-    }
-
-    printf("Đã tìm thấy tài khoản: ID = %d | %s | Vai trò: %s\n",
-           ds_nguoi_dung[vt].id, ds_nguoi_dung[vt].ten_dang_nhap,
-           ten_vai_tro(ds_nguoi_dung[vt].vai_tro));
-
-    printf("1. Sửa vai trò\n");
-    printf("2. Sửa mật khẩu\n");
-    lua_chon = nhap_so_nguyen("Nhập lựa chọn: ");
-
-    if (lua_chon == 1)
-    {
-        do
-        {
-            vai_tro_moi = nhap_so_nguyen("Nhập vai trò mới (1 = Admin, 2 = Staff, 3 = SinhVien): ");
-            if (vai_tro_moi < 1 || vai_tro_moi > 3)
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF)
             {
-                printf("Lỗi: Vai trò chỉ được chọn 1, 2 hoặc 3.\n");
             }
-        } while (vai_tro_moi < 1 || vai_tro_moi > 3);
-
-        ds_nguoi_dung[vt].vai_tro = vai_tro_moi;
-
-        // Nếu admin tự sửa vai trò của chính mình thì phải cập nhật luôn vai trò đang đăng nhập
-        if (ds_nguoi_dung[vt].id == id_dang_nhap)
-        {
-            vai_tro_dang_nhap = vai_tro_moi;
+            if (c == EOF)
+            {
+                tkHienTai->role = -2; // het du lieu nhap, thoat chuong trinh
+                return danhSachTK;
+            }
+            printf("Lua chon khong hop le! Vui long nhap vao so.\n");
+            choice = -1; // dat gia tri trung tinh de vong do-while tiep tuc chay
+            continue;
         }
-    }
-    else if (lua_chon == 2)
-    {
-        nhap_chuoi("Nhập mật khẩu mới: ", ds_nguoi_dung[vt].mat_khau,
-                   sizeof(ds_nguoi_dung[vt].mat_khau));
-    }
-    else
-    {
-        printf("Lựa chọn không hợp lệ!\n");
-        return;
-    }
+        getchar();
 
-    printf("Cập nhật thành công!\n");
+        switch (choice)
+        {
+        case 1:
+            hienThiDsTk(danhSachTK, *soluongTK);
+            break;
+        case 2:
+            hienThiDsSv(danhSachTK, *soluongTK, danhSachPhieu, soluongPhieu);
+            break;
+        case 3:
+            danhSachTK = themTk(danhSachTK, soluongTK, maxSizeTK, idTiepTheo);
+            break;
+        case 4:
+            danhSachTK = xoaTk(danhSachTK, soluongTK, maxSizeTK, tkHienTai);
+            break;
+        case 5:
+            suaTk(danhSachTK, *soluongTK, tkHienTai);
+            break;
+        case 6:
+            resetMatKhau(danhSachTK, *soluongTK);
+            break;
+        case 7:
+            tkHienTai->role = -1; // dang xuat, quay lai man hinh dang nhap
+            printf("Da dang xuat khoi he thong.\n");
+            break;
+        case 0:
+            tkHienTai->role = -2; // bao main biet nguoi dung muon thoat chuong trinh
+            break;
+        default:
+            printf("Lua chon khong hop le! Vui long chon lai.\n");
+        }
+    } while (choice != 7 && choice != 0);
+
+    return danhSachTK;
 }
 
-// 1.2.5 Reset mật khẩu của một tài khoản về giá trị mặc định "123456"
-void reset_mat_khau()
+Sach *hienThiStaffMenu(Sach *danhSachSach, int *soluongSach, int *maxSizeSach,
+                       PhieuMuon **danhSachPhieu, int *soluongPhieu, int *maxSizePhieu,
+                       int *idPhieuTiepTheo, TaiKhoan *danhSachTK, int soluongTK,
+                       TaiKhoan *tkHienTai)
 {
-    char ten[50];
-    int vt;
-
-    nhap_chuoi("Nhập tên đăng nhập của tài khoản cần reset mật khẩu: ", ten, sizeof(ten));
-
-    vt = tim_nguoi_dung_theo_ten(ds_nguoi_dung, so_luong_nguoi_dung, ten);
-    if (vt == -1)
+    int choice = 0;
+    do
     {
-        printf("Lỗi: Không tìm thấy tài khoản.\n");
-        return;
-    }
+        printf("\n===== MENU THU THU =====\n");
+        printf("1. Them sach moi\n");
+        printf("2. Hien thi danh sach sach\n");
+        printf("3. Cap nhat thong tin sach\n");
+        printf("4. Xoa mot cuon sach\n");
+        printf("5. Tim kiem sach\n");
+        printf("6. Sap xep sach theo nam xuat ban\n");
+        printf("7. Hien thi danh sach sinh vien\n");
+        printf("8. Cho muon sach\n");
+        printf("9. Tra sach\n");
+        printf("10. Danh sach sach dang duoc muon\n");
+        printf("11. Dang xuat\n");
+        printf("0. Thoat chuong trinh\n");
+        printf("Moi ban nhap vao lua chon: ");
+        if (scanf("%d", &choice) != 1)
+        {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF)
+            {
+            }
+            if (c == EOF)
+            {
+                tkHienTai->role = -2; // het du lieu nhap, thoat chuong trinh
+                return danhSachSach;
+            }
+            printf("Lua chon khong hop le! Vui long nhap vao so.\n");
+            choice = -1; // dat gia tri trung tinh de vong do-while tiep tuc chay
+            continue;
+        }
+        getchar();
 
-    strcpy(ds_nguoi_dung[vt].mat_khau, MAT_KHAU_MAC_DINH);
-    printf("Đã reset mật khẩu của \"%s\" về \"%s\" thành công!\n", ten, MAT_KHAU_MAC_DINH);
+        switch (choice)
+        {
+        case 1:
+            danhSachSach = themSach(danhSachSach, soluongSach, maxSizeSach);
+            break;
+        case 2:
+            hienThiDsSach(danhSachSach, *soluongSach);
+            break;
+        case 3:
+            capNhatSach(danhSachSach, *soluongSach);
+            break;
+        case 4:
+            danhSachSach = xoaSach(danhSachSach, soluongSach, maxSizeSach);
+            break;
+        case 5:
+            timKiemSach(danhSachSach, *soluongSach);
+            break;
+        case 6:
+            sapXepSach(danhSachSach, *soluongSach);
+            break;
+        case 7:
+            hienThiDsSv(danhSachTK, soluongTK, *danhSachPhieu, *soluongPhieu);
+            break;
+        case 8:
+            // muonSach co the realloc lam DIA CHI mang phieu thay doi,
+            // menu phai nhan lai dia chi moi qua con tro cap 2 de tra cho main
+            *danhSachPhieu = muonSach(*danhSachPhieu, soluongPhieu, maxSizePhieu,
+                                      idPhieuTiepTheo, danhSachTK, soluongTK,
+                                      danhSachSach, *soluongSach);
+            break;
+        case 9:
+            traSach(*danhSachPhieu, *soluongPhieu, danhSachSach, *soluongSach,
+                    danhSachTK, soluongTK);
+            break;
+        case 10:
+            hienThiSachDangMuon(*danhSachPhieu, *soluongPhieu, danhSachTK, soluongTK,
+                                danhSachSach, *soluongSach);
+            break;
+        case 11:
+            tkHienTai->role = -1; // dang xuat, quay lai man hinh dang nhap
+            printf("Da dang xuat khoi he thong.\n");
+            break;
+        case 0:
+            tkHienTai->role = -2; // bao main biet nguoi dung muon thoat chuong trinh
+            break;
+        default:
+            printf("Lua chon khong hop le! Vui long chon lai.\n");
+        }
+    } while (choice != 11 && choice != 0);
+
+    return danhSachSach;
 }
 
-/* ==================== NHÓM HÀM NGHIỆP VỤ STAFF ==================== */
-
-// 1.3.1 Thêm sách mới (mã sách phải duy nhất, da_muon tự động = 0)
-void them_sach()
+Sach *themSach(Sach *danhSachSach, int *soluongSach, int *maxSizeSach)
 {
-    Sach moi;
+    Sach sachNew;
     char ma[20];
-    Sach *temp;
 
-    nhap_chuoi("Nhập mã sách: ", ma, sizeof(ma));
-
-    if (tim_sach_theo_ma(ds_sach, so_luong_sach, ma) != -1)
+    printf("Moi ban nhap vao ma sach: ");
+    if (scanf("%s", ma) == EOF)
     {
-        printf("Lỗi: Mã sách đã tồn tại.\n");
-        return;
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachSach;
+
     }
-    strcpy(moi.ma_sach, ma);
+    getchar();
 
-    nhap_chuoi("Nhập tên sách: ", moi.ten_sach, sizeof(moi.ten_sach));
-    nhap_chuoi("Nhập tác giả: ", moi.tac_gia, sizeof(moi.tac_gia));
-    moi.nam_xb = nhap_so_nguyen("Nhập năm xuất bản: ");
-    moi.tong_sl = nhap_so_nguyen("Nhập tổng số lượng: ");
-    moi.da_muon = 0; // Sách mới nhập về nên chưa cho mượn cuốn nào
-
-    temp = realloc(ds_sach, (so_luong_sach + 1) * sizeof(Sach));
-    if (temp == NULL)
+    // Ma sach phai duy nhat, trung thi huy ngay thao tac them
+    if (timSachTheoMa(danhSachSach, *soluongSach, ma) != -1)
     {
-        printf("Lỗi: Không đủ bộ nhớ để thêm sách!\n");
-        return;
+        printf("Loi: Ma sach da ton tai.\n");
+        return danhSachSach;
     }
-    ds_sach = temp;
+    strcpy(sachNew.maSach, ma);
 
-    ds_sach[so_luong_sach] = moi;
-    so_luong_sach++;
+    printf("Moi ban nhap vao ten sach: ");
+    fgets(sachNew.tenSach, sizeof(sachNew.tenSach), stdin);
+    sachNew.tenSach[strcspn(sachNew.tenSach, "\n")] = 0;
 
-    printf("Đã thêm sách thành công!\n");
+    printf("Moi ban nhap vao tac gia: ");
+    fgets(sachNew.tacGia, sizeof(sachNew.tacGia), stdin);
+    sachNew.tacGia[strcspn(sachNew.tacGia, "\n")] = 0;
+
+    printf("Moi ban nhap vao nam xuat ban: ");
+    if (scanf("%d", &sachNew.namXb) != 1)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachSach;
+
+    }
+    getchar();
+
+    printf("Moi ban nhap vao tong so luong: ");
+    if (scanf("%d", &sachNew.tongSl) != 1)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachSach;
+
+    }
+    getchar();
+
+    sachNew.daMuon = 0; // sach moi nhap ve nen chua cho muon cuon nao
+
+    // Mang day thi mo rong them 1 o, realloc co the chuyen dia chi nen return con tro moi
+    if (*soluongSach >= *maxSizeSach)
+    {
+        if (*maxSizeSach == 0)
+        {
+            *maxSizeSach = 5;
+        }
+        else
+        {
+            (*maxSizeSach)++;
+        }
+        danhSachSach = (Sach *)realloc(danhSachSach, *maxSizeSach * sizeof(Sach));
+    }
+
+    danhSachSach[*soluongSach] = sachNew;
+    (*soluongSach)++;
+
+    printf("Da them sach thanh cong!\n");
+    return danhSachSach;
 }
 
-// 1.3.2 Hiển thị danh sách sách (kèm cột "Hiện có" = tổng số lượng - đã mượn)
-void hien_thi_danh_sach_sach()
+void hienThiDsSach(Sach *danhSachSach, int soluongSach)
 {
-    if (so_luong_sach == 0)
+    if (soluongSach == 0)
     {
-        printf("Thư viện hiện chưa có cuốn sách nào.\n");
+        printf("Thu vien hien chua co cuon sach nao.\n");
         return;
     }
 
-    printf("\n========================= DANH MỤC SÁCH =========================\n");
+    printf("\n===== DANH MUC SACH =====\n");
     printf("%-10s %-30s %-20s %-8s %-8s %-8s %-8s\n",
-           "Mã sách", "Tên sách", "Tác giả", "Năm XB", "Tổng SL", "Đã mượn", "Hiện có");
-
-    for (int i = 0; i < so_luong_sach; i++)
+           "Ma sach", "Ten sach", "Tac gia", "Nam XB", "Tong SL", "Da muon", "Hien co");
+    for (int i = 0; i < soluongSach; i++)
     {
-        // Số lượng hiện có được tính bằng tổng số lượng trừ đi số bản đã cho mượn
+        // So luong hien co = tong so luong tru so ban da cho muon
         printf("%-10s %-30s %-20s %-8d %-8d %-8d %-8d\n",
-               ds_sach[i].ma_sach, ds_sach[i].ten_sach, ds_sach[i].tac_gia,
-               ds_sach[i].nam_xb, ds_sach[i].tong_sl, ds_sach[i].da_muon,
-               ds_sach[i].tong_sl - ds_sach[i].da_muon);
+               danhSachSach[i].maSach, danhSachSach[i].tenSach, danhSachSach[i].tacGia,
+               danhSachSach[i].namXb, danhSachSach[i].tongSl, danhSachSach[i].daMuon,
+               danhSachSach[i].tongSl - danhSachSach[i].daMuon);
     }
-
-    printf("Hiện thư viện có %d đầu sách.\n", so_luong_sach);
+    printf("Hien thu vien co %d dau sach.\n", soluongSach);
 }
 
-// 1.3.3 Cập nhật thông tin sách theo mã
-void cap_nhat_sach()
+void capNhatSach(Sach *danhSachSach, int soluongSach)
 {
     char ma[20];
-    int vt, lua_chon;
+    int vt, choice;
 
-    nhap_chuoi("Nhập mã sách cần cập nhật: ", ma, sizeof(ma));
+    printf("Moi ban nhap vao ma sach can cap nhat: ");
+    if (scanf("%s", ma) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
 
-    vt = tim_sach_theo_ma(ds_sach, so_luong_sach, ma);
+    }
+    getchar();
+
+    vt = timSachTheoMa(danhSachSach, soluongSach, ma);
     if (vt == -1)
     {
-        printf("Lỗi: Mã sách không tồn tại.\n");
+        printf("Loi: Ma sach khong ton tai.\n");
         return;
     }
 
-    printf("Đã tìm thấy sách: [%s] %s - %s\n",
-           ds_sach[vt].ma_sach, ds_sach[vt].ten_sach, ds_sach[vt].tac_gia);
+    printf("Da tim thay sach: [%s] %s - %s\n",
+           danhSachSach[vt].maSach, danhSachSach[vt].tenSach, danhSachSach[vt].tacGia);
 
-    printf("1. Tên sách\n");
-    printf("2. Tác giả\n");
-    printf("3. Năm xuất bản\n");
-    printf("4. Tổng số lượng\n");
-    lua_chon = nhap_so_nguyen("Chọn thông tin cần sửa: ");
+    printf("1. Ten sach\n");
+    printf("2. Tac gia\n");
+    printf("3. Nam xuat ban\n");
+    printf("4. Tong so luong\n");
+    printf("Moi ban chon thong tin can sua: ");
+    if (scanf("%d", &choice) != 1)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
 
-    switch (lua_chon)
+    }
+    getchar();
+
+    switch (choice)
     {
     case 1:
-        nhap_chuoi("Nhập tên sách mới: ", ds_sach[vt].ten_sach, sizeof(ds_sach[vt].ten_sach));
+        printf("Moi ban nhap vao ten sach moi: ");
+        fgets(danhSachSach[vt].tenSach, sizeof(danhSachSach[vt].tenSach), stdin);
+        danhSachSach[vt].tenSach[strcspn(danhSachSach[vt].tenSach, "\n")] = 0;
         break;
     case 2:
-        nhap_chuoi("Nhập tác giả mới: ", ds_sach[vt].tac_gia, sizeof(ds_sach[vt].tac_gia));
+        printf("Moi ban nhap vao tac gia moi: ");
+        fgets(danhSachSach[vt].tacGia, sizeof(danhSachSach[vt].tacGia), stdin);
+        danhSachSach[vt].tacGia[strcspn(danhSachSach[vt].tacGia, "\n")] = 0;
         break;
     case 3:
-        ds_sach[vt].nam_xb = nhap_so_nguyen("Nhập năm xuất bản mới: ");
+        printf("Moi ban nhap vao nam xuat ban moi: ");
+        if (scanf("%d", &danhSachSach[vt].namXb) != 1)
+        {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+        }
+        getchar();
         break;
     case 4:
         do
         {
-            ds_sach[vt].tong_sl = nhap_so_nguyen("Nhập tổng số lượng mới: ");
-            // Ràng buộc: tổng số lượng không được thấp hơn số bản đã cho mượn
-            if (ds_sach[vt].tong_sl < ds_sach[vt].da_muon)
+            printf("Moi ban nhap vao tong so luong moi: ");
+            if (scanf("%d", &danhSachSach[vt].tongSl) != 1)
             {
-                printf("Lỗi: Tổng số lượng không được thấp hơn số lượng đã cho mượn (%d). Nhập lại!\n",
-                       ds_sach[vt].da_muon);
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
             }
-        } while (ds_sach[vt].tong_sl < ds_sach[vt].da_muon);
+            getchar();
+            // Rang buoc: tong so luong khong duoc thap hon so ban da cho muon
+            if (danhSachSach[vt].tongSl < danhSachSach[vt].daMuon)
+            {
+                printf("Loi: Tong so luong khong duoc thap hon so luong da cho muon (%d). Nhap lai!\n",
+                       danhSachSach[vt].daMuon);
+            }
+        } while (danhSachSach[vt].tongSl < danhSachSach[vt].daMuon);
         break;
     default:
-        printf("Lựa chọn không hợp lệ!\n");
+        printf("Lua chon khong hop le!\n");
         return;
     }
 
-    printf("Cập nhật thành công!\n");
+    printf("Cap nhat thanh cong!\n");
 }
 
-// 1.3.4 Xóa sách (chỉ xóa được khi sách không đang được ai mượn)
-void xoa_sach()
+Sach *xoaSach(Sach *danhSachSach, int *soluongSach, int *maxSizeSach)
 {
     char ma[20];
     int vt;
-    Sach *temp;
+    char traLoi;
 
-    nhap_chuoi("Nhập mã sách cần xóa: ", ma, sizeof(ma));
+    printf("Moi ban nhap vao ma sach can xoa: ");
+    if (scanf("%s", ma) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachSach;
 
-    vt = tim_sach_theo_ma(ds_sach, so_luong_sach, ma);
+    }
+    getchar();
+
+    vt = timSachTheoMa(danhSachSach, *soluongSach, ma);
     if (vt == -1)
     {
-        printf("Lỗi: Mã sách không tồn tại.\n");
-        return;
+        printf("Loi: Ma sach khong ton tai.\n");
+        return danhSachSach;
     }
 
-    if (ds_sach[vt].da_muon > 0)
+    // Chi cho phep xoa khi khong ai dang muon cuon sach nay
+    if (danhSachSach[vt].daMuon > 0)
     {
-        printf("Lỗi: Không thể xóa sách đang có người mượn.\n");
-        return;
+        printf("Loi: Khong the xoa sach dang co nguoi muon.\n");
+        return danhSachSach;
     }
 
-    printf("Thông tin sách cần xóa:\n");
-    printf("  Mã sách:       %s\n", ds_sach[vt].ma_sach);
-    printf("  Tên sách:      %s\n", ds_sach[vt].ten_sach);
-    printf("  Tác giả:       %s\n", ds_sach[vt].tac_gia);
-    printf("  Năm xuất bản:  %d\n", ds_sach[vt].nam_xb);
-    printf("  Tổng số lượng: %d\n", ds_sach[vt].tong_sl);
-
-    if (!xac_nhan("Bạn có chắc chắn muốn xóa cuốn sách này? (Y/N): "))
+    printf("Thong tin sach can xoa:\n");
+    printf("  Ma sach:       %s\n", danhSachSach[vt].maSach);
+    printf("  Ten sach:      %s\n", danhSachSach[vt].tenSach);
+    printf("  Tac gia:       %s\n", danhSachSach[vt].tacGia);
+    printf("  Nam xuat ban:  %d\n", danhSachSach[vt].namXb);
+    printf("  Tong so luong: %d\n", danhSachSach[vt].tongSl);
+    printf("Ban co chac chan muon xoa cuon sach nay? (Y/N): ");
+    scanf("%c", &traLoi);
+    getchar();
+    if (traLoi != 'Y' && traLoi != 'y')
     {
-        printf("Đã hủy việc xóa sách.\n");
-        return;
+        printf("Da huy viec xoa sach.\n");
+        return danhSachSach;
     }
 
-    for (int i = vt; i < so_luong_sach - 1; i++)
+    for (int i = vt; i < *soluongSach - 1; i++)
     {
-        ds_sach[i] = ds_sach[i + 1];
+        danhSachSach[i] = danhSachSach[i + 1];
     }
-    so_luong_sach--;
+    (*soluongSach)--;
 
-    if (so_luong_sach == 0)
+    if (*soluongSach == 0)
     {
-        free(ds_sach);
-        ds_sach = NULL;
+        free(danhSachSach);
+        danhSachSach = NULL;
+        *maxSizeSach = 0;
     }
     else
     {
-        temp = realloc(ds_sach, so_luong_sach * sizeof(Sach));
-        if (temp != NULL)
-        {
-            ds_sach = temp;
-        }
+        *maxSizeSach = *soluongSach;
+        danhSachSach = (Sach *)realloc(danhSachSach, *maxSizeSach * sizeof(Sach));
     }
 
-    printf("Đã xóa sách thành công!\n");
+    printf("Da xoa sach thanh cong!\n");
+    return danhSachSach;
 }
 
-// 1.3.5 Tìm kiếm sách theo từ khóa trong tên (không phân biệt hoa/thường)
-void tim_kiem_sach()
+void timKiemSach(Sach *danhSachSach, int soluongSach)
 {
-    char tu_khoa[100];
-    int tim_thay = 0;
+    char tuKhoa[100];
+    int timThay = 0;
 
-    nhap_chuoi("Nhập từ khóa cần tìm: ", tu_khoa, sizeof(tu_khoa));
+    printf("Moi ban nhap vao tu khoa can tim: ");
+    fgets(tuKhoa, sizeof(tuKhoa), stdin);
+    tuKhoa[strcspn(tuKhoa, "\n")] = 0;
 
-    printf("\n======================= KẾT QUẢ TÌM KIẾM =======================\n");
+    printf("\n===== KET QUA TIM KIEM =====\n");
     printf("%-10s %-30s %-20s %-8s %-8s %-8s %-8s\n",
-           "Mã sách", "Tên sách", "Tác giả", "Năm XB", "Tổng SL", "Đã mượn", "Hiện có");
-
-    for (int i = 0; i < so_luong_sach; i++)
+           "Ma sach", "Ten sach", "Tac gia", "Nam XB", "Tong SL", "Da muon", "Hien co");
+    for (int i = 0; i < soluongSach; i++)
     {
-        if (ten_chua_tu_khoa(ds_sach[i].ten_sach, tu_khoa))
+        if (tenChuaTuKhoa(danhSachSach[i].tenSach, tuKhoa))
         {
             printf("%-10s %-30s %-20s %-8d %-8d %-8d %-8d\n",
-                   ds_sach[i].ma_sach, ds_sach[i].ten_sach, ds_sach[i].tac_gia,
-                   ds_sach[i].nam_xb, ds_sach[i].tong_sl, ds_sach[i].da_muon,
-                   ds_sach[i].tong_sl - ds_sach[i].da_muon);
-            tim_thay = 1;
+                   danhSachSach[i].maSach, danhSachSach[i].tenSach, danhSachSach[i].tacGia,
+                   danhSachSach[i].namXb, danhSachSach[i].tongSl, danhSachSach[i].daMuon,
+                   danhSachSach[i].tongSl - danhSachSach[i].daMuon);
+            timThay = 1;
         }
     }
 
-    if (!tim_thay)
+    if (!timThay)
     {
-        printf("Không tìm thấy sách nào có tên chứa từ khóa \"%s\".\n", tu_khoa);
+        printf("Khong tim thay sach nao co ten chua tu khoa \"%s\".\n", tuKhoa);
     }
 }
 
-// 1.3.6 Sắp xếp danh sách sách theo năm xuất bản (tăng dần hoặc giảm dần)
-void sap_xep_sach()
+void sapXepSach(Sach *danhSachSach, int soluongSach)
 {
     Sach temp;
-    int lua_chon;
+    int choice;
 
-    if (so_luong_sach == 0)
+    if (soluongSach == 0)
     {
-        printf("Thư viện hiện chưa có cuốn sách nào.\n");
+        printf("Thu vien hien chua co cuon sach nao.\n");
         return;
     }
 
-    printf("1. Sắp xếp theo năm xuất bản tăng dần (từ cũ đến mới)\n");
-    printf("2. Sắp xếp theo năm xuất bản giảm dần (từ mới đến cũ)\n");
-    lua_chon = nhap_so_nguyen("Nhập lựa chọn: ");
-
-    if (lua_chon != 1 && lua_chon != 2)
+    printf("1. Sap xep theo nam xuat ban tang dan (tu cu den moi)\n");
+    printf("2. Sap xep theo nam xuat ban giam dan (tu moi den cu)\n");
+    printf("Moi ban nhap vao lua chon: ");
+    if (scanf("%d", &choice) != 1)
     {
-        printf("Lựa chọn không hợp lệ!\n");
-        return;
-    }
-
-    for (int i = 0; i < so_luong_sach - 1; i++)
-    {
-        for (int j = 0; j < so_luong_sach - 1 - i; j++)
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
         {
-            // Điều kiện hoán đổi phụ thuộc thứ tự người dùng chọn
-            int can_hoan_doi = (lua_chon == 1)
-                                   ? (ds_sach[j].nam_xb > ds_sach[j + 1].nam_xb)
-                                   : (ds_sach[j].nam_xb < ds_sach[j + 1].nam_xb);
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
 
-            if (can_hoan_doi)
+    }
+    getchar();
+
+    if (choice != 1 && choice != 2)
+    {
+        printf("Lua chon khong hop le!\n");
+        return;
+    }
+
+    for (int i = 0; i < soluongSach - 1; i++)
+    {
+        for (int j = 0; j < soluongSach - 1 - i; j++)
+        {
+            // Dieu kien hoan doi phu thuoc thu tu nguoi dung chon
+            int canHoanDoi = (choice == 1)
+                                 ? (danhSachSach[j].namXb > danhSachSach[j + 1].namXb)
+                                 : (danhSachSach[j].namXb < danhSachSach[j + 1].namXb);
+            if (canHoanDoi)
             {
-                // Phải hoán đổi nguyên struct chứ không chỉ hoán đổi trường năm
-                temp = ds_sach[j];
-                ds_sach[j] = ds_sach[j + 1];
-                ds_sach[j + 1] = temp;
+                // Phai hoan doi nguyen struct chu khong chi hoan doi truong nam
+                temp = danhSachSach[j];
+                danhSachSach[j] = danhSachSach[j + 1];
+                danhSachSach[j + 1] = temp;
             }
         }
     }
 
-    printf("Đã sắp xếp danh sách sách thành công!\n");
-    hien_thi_danh_sach_sach();
+    printf("Da sap xep danh sach sach thanh cong!\n");
+    hienThiDsSach(danhSachSach, soluongSach);
 }
 
-// 1.3.7 Cho mượn sách: kiểm tra sinh viên, sách, còn sách, chưa mượn rồi mới tạo phiếu
-void muon_sach()
+PhieuMuon *muonSach(PhieuMuon *danhSachPhieu, int *soluongPhieu, int *maxSizePhieu,
+                    int *idPhieuTiepTheo, TaiKhoan *danhSachTK, int soluongTK,
+                    Sach *danhSachSach, int soluongSach)
 {
-    PhieuMuon moi;
-    PhieuMuon *temp;
-    int id_sv, vt_sv, vt_sach;
+    PhieuMuon phieuNew;
+    int idSv, vtSv, vtSach;
     char ma[20];
 
-    id_sv = nhap_so_nguyen("Nhập ID của sinh viên mượn sách: ");
-
-    vt_sv = tim_nguoi_dung_theo_id(ds_nguoi_dung, so_luong_nguoi_dung, id_sv);
-    if (vt_sv == -1)
+    printf("Moi ban nhap vao ID sinh vien muon sach: ");
+    if (scanf("%d", &idSv) != 1)
     {
-        printf("Lỗi: Không tìm thấy sinh viên có ID %d.\n", id_sv);
-        return;
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachPhieu;
+
     }
-    if (ds_nguoi_dung[vt_sv].vai_tro != VAI_TRO_SINH_VIEN)
+    getchar();
+
+    vtSv = timTkTheoId(danhSachTK, soluongTK, idSv);
+    if (vtSv == -1)
     {
-        printf("Lỗi: Tài khoản ID %d không phải là Sinh viên.\n", id_sv);
-        return;
+        printf("Loi: Khong tim thay sinh vien co ID %d.\n", idSv);
+        return danhSachPhieu;
     }
-
-    nhap_chuoi("Nhập mã sách cần mượn: ", ma, sizeof(ma));
-
-    vt_sach = tim_sach_theo_ma(ds_sach, so_luong_sach, ma);
-    if (vt_sach == -1)
+    if (danhSachTK[vtSv].role != 3)
     {
-        printf("Lỗi: Mã sách không tồn tại.\n");
-        return;
-    }
-
-    // Còn sách để mượn khi số bản đã mượn vẫn nhỏ hơn tổng số lượng
-    if (ds_sach[vt_sach].da_muon >= ds_sach[vt_sach].tong_sl)
-    {
-        printf("Lỗi: Sách \"%s\" đã hết, không còn bản nào để mượn.\n", ds_sach[vt_sach].ten_sach);
-        return;
+        printf("Loi: Tai khoan ID %d khong phai la Sinh vien.\n", idSv);
+        return danhSachPhieu;
     }
 
-    // Mỗi sinh viên chỉ được mượn 1 bản của cùng một cuốn sách tại một thời điểm
-    if (tim_phieu_dang_muon(id_sv, ma) != -1)
+    printf("Moi ban nhap vao ma sach can muon: ");
+    if (scanf("%s", ma) == EOF)
     {
-        printf("Lỗi: Sinh viên này đang mượn cuốn sách này và chưa trả.\n");
-        return;
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachPhieu;
+
+    }
+    getchar();
+
+    vtSach = timSachTheoMa(danhSachSach, soluongSach, ma);
+    if (vtSach == -1)
+    {
+        printf("Loi: Ma sach khong ton tai.\n");
+        return danhSachPhieu;
     }
 
-    ds_sach[vt_sach].da_muon++; // Tăng số bản đã cho mượn của cuốn sách lên 1
-
-    temp = realloc(ds_phieu_muon, (so_luong_phieu + 1) * sizeof(PhieuMuon));
-    if (temp == NULL)
+    // Con sach de muon khi so ban da muon van nho hon tong so luong
+    if (danhSachSach[vtSach].daMuon >= danhSachSach[vtSach].tongSl)
     {
-        printf("Lỗi: Không đủ bộ nhớ để ghi phiếu mượn!\n");
-        ds_sach[vt_sach].da_muon--; // Ghi phiếu thất bại thì hoàn lại số mượn vừa tăng
-        return;
+        printf("Loi: Sach \"%s\" da het, khong con ban nao de muon.\n", danhSachSach[vtSach].tenSach);
+        return danhSachPhieu;
     }
-    ds_phieu_muon = temp;
 
-    moi.id_phieu = id_phieu_tiep_theo++;
-    moi.id_nguoi_dung = id_sv;
-    strcpy(moi.ma_sach, ma);
-    moi.trang_thai = 0; // 0 = đang mượn
+    // Moi sinh vien chi duoc muon 1 ban cua cung mot cuon sach tai mot thoi diem
+    if (timPhieuDangMuon(danhSachPhieu, *soluongPhieu, idSv, ma) != -1)
+    {
+        printf("Loi: Sinh vien nay dang muon cuon sach nay va chua tra.\n");
+        return danhSachPhieu;
+    }
 
-    ds_phieu_muon[so_luong_phieu] = moi;
-    so_luong_phieu++;
+    danhSachSach[vtSach].daMuon++; // tang so ban da cho muon cua cuon sach len 1
 
-    printf("Cho mượn thành công! Sinh viên %s (ID %d) mượn sách \"%s\".\n",
-           ds_nguoi_dung[vt_sv].ten_dang_nhap, id_sv, ds_sach[vt_sach].ten_sach);
+    if (*soluongPhieu >= *maxSizePhieu)
+    {
+        if (*maxSizePhieu == 0)
+        {
+            *maxSizePhieu = 5;
+        }
+        else
+        {
+            (*maxSizePhieu)++;
+        }
+        danhSachPhieu = (PhieuMuon *)realloc(danhSachPhieu, *maxSizePhieu * sizeof(PhieuMuon));
+    }
+
+    phieuNew.idPhieu = (*idPhieuTiepTheo)++;
+    phieuNew.idNguoiDung = idSv;
+    strcpy(phieuNew.maSach, ma);
+    phieuNew.trangThai = 0; // 0 = dang muon
+
+    danhSachPhieu[*soluongPhieu] = phieuNew;
+    (*soluongPhieu)++;
+
+    printf("Cho muon thanh cong! Sinh vien %s (ID %d) muon sach \"%s\".\n",
+           danhSachTK[vtSv].username, idSv, danhSachSach[vtSach].tenSach);
+    return danhSachPhieu;
 }
 
-// 1.3.8 Trả sách: tìm phiếu đang mượn, đổi trạng thái và giảm số đã mượn
-void tra_sach()
+void traSach(PhieuMuon *danhSachPhieu, int soluongPhieu, Sach *danhSachSach,
+             int soluongSach, TaiKhoan *danhSachTK, int soluongTK)
 {
-    int id_sv, vt_phieu, vt_sach, vt_sv;
+    int idSv, vtPhieu, vtSach, vtSv;
     char ma[20];
 
-    id_sv = nhap_so_nguyen("Nhập ID của sinh viên trả sách: ");
-    nhap_chuoi("Nhập mã sách cần trả: ", ma, sizeof(ma));
-
-    vt_phieu = tim_phieu_dang_muon(id_sv, ma);
-    if (vt_phieu == -1)
+    printf("Moi ban nhap vao ID sinh vien tra sach: ");
+    if (scanf("%d", &idSv) != 1)
     {
-        printf("Lỗi: Sinh viên không có mượn cuốn sách này.\n");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+    }
+    getchar();
+
+    printf("Moi ban nhap vao ma sach can tra: ");
+    if (scanf("%s", ma) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+    }
+    getchar();
+
+    vtPhieu = timPhieuDangMuon(danhSachPhieu, soluongPhieu, idSv, ma);
+    if (vtPhieu == -1)
+    {
+        printf("Loi: Sinh vien khong co muon cuon sach nay.\n");
         return;
     }
 
-    ds_phieu_muon[vt_phieu].trang_thai = 1; // Đổi trạng thái 0 (đang mượn) -> 1 (đã trả)
+    danhSachPhieu[vtPhieu].trangThai = 1; // doi trang thai 0 (dang muon) -> 1 (da tra)
 
-    // Giảm số bản đã cho mượn của cuốn sách xuống 1
-    vt_sach = tim_sach_theo_ma(ds_sach, so_luong_sach, ma);
-    if (vt_sach != -1)
+    // Giam so ban da cho muon cua cuon sach xuong 1
+    vtSach = timSachTheoMa(danhSachSach, soluongSach, ma);
+    if (vtSach != -1)
     {
-        ds_sach[vt_sach].da_muon--;
+        danhSachSach[vtSach].daMuon--;
     }
 
-    vt_sv = tim_nguoi_dung_theo_id(ds_nguoi_dung, so_luong_nguoi_dung, id_sv);
-    printf("Trả sách thành công! Đã ghi nhận \"%s\" trả sách mã %s.\n",
-           ds_nguoi_dung[vt_sv].ten_dang_nhap, ma);
+    vtSv = timTkTheoId(danhSachTK, soluongTK, idSv);
+    printf("Tra sach thanh cong! Da ghi nhan \"%s\" tra sach ma %s.\n",
+           danhSachTK[vtSv].username, ma);
 }
 
-// 1.3.9 Danh sách toàn bộ sách đang được mượn (tra cứu ngược tên SV và tên sách)
-void hien_thi_sach_dang_muon()
+void hienThiSachDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu,
+                         TaiKhoan *danhSachTK, int soluongTK,
+                         Sach *danhSachSach, int soluongSach)
 {
     int co = 0;
-    int vt_sv, vt_sach;
+    int vtSv, vtSach;
 
-    printf("\n==================== SÁCH ĐANG ĐƯỢC MƯỢN ====================\n");
+    printf("\n===== SACH DANG DUOC MUON =====\n");
     printf("%-10s %-8s %-25s %-10s %-30s\n",
-           "Mã phiếu", "ID SV", "Tên sinh viên", "Mã sách", "Tên sách");
-
-    for (int i = 0; i < so_luong_phieu; i++)
+           "Ma phieu", "ID SV", "Ten sinh vien", "Ma sach", "Ten sach");
+    for (int i = 0; i < soluongPhieu; i++)
     {
-        if (ds_phieu_muon[i].trang_thai != 0)
+        if (danhSachPhieu[i].trangThai != 0)
         {
-            continue; // Bỏ qua các phiếu đã trả
+            continue; // bo qua cac phieu da tra
         }
 
-        // Phiếu mượn chỉ lưu ID và mã sách nên phải tra cứu ngược 2 mảng kia để lấy tên hiển thị
-        vt_sv = tim_nguoi_dung_theo_id(ds_nguoi_dung, so_luong_nguoi_dung,
-                                       ds_phieu_muon[i].id_nguoi_dung);
-        vt_sach = tim_sach_theo_ma(ds_sach, so_luong_sach, ds_phieu_muon[i].ma_sach);
-
-        if (vt_sv != -1 && vt_sach != -1)
+        // Phieu muon chi luu ID va ma sach nen phai tra cuu nguoc 2 mang kia lay ten hien thi
+        vtSv = timTkTheoId(danhSachTK, soluongTK, danhSachPhieu[i].idNguoiDung);
+        vtSach = timSachTheoMa(danhSachSach, soluongSach, danhSachPhieu[i].maSach);
+        if (vtSv != -1 && vtSach != -1)
         {
             printf("%-10d %-8d %-25s %-10s %-30s\n",
-                   ds_phieu_muon[i].id_phieu,
-                   ds_nguoi_dung[vt_sv].id,
-                   ds_nguoi_dung[vt_sv].ten_dang_nhap,
-                   ds_sach[vt_sach].ma_sach,
-                   ds_sach[vt_sach].ten_sach);
+                   danhSachPhieu[i].idPhieu,
+                   danhSachTK[vtSv].id,
+                   danhSachTK[vtSv].username,
+                   danhSachSach[vtSach].maSach,
+                   danhSachSach[vtSach].tenSach);
             co = 1;
         }
     }
 
     if (!co)
     {
-        printf("Hiện không có cuốn sách nào đang được mượn.\n");
+        printf("Hien khong co cuon sach nao dang duoc muon.\n");
     }
 }
 
-/* ==================== NHÓM HÀM NGHIỆP VỤ SINH VIÊN ==================== */
-
-// 1.4.1 Danh sách sách cho Sinh viên: chỉ hiện thông tin cơ bản + số lượng hiện có
-void hien_thi_sach_co_ban()
+int timTkTheoId(TaiKhoan *danhSachTK, int soluongTK, int id)
 {
-    if (so_luong_sach == 0)
+    for (int i = 0; i < soluongTK; i++)
     {
-        printf("Thư viện hiện chưa có cuốn sách nào.\n");
-        return;
+        if (danhSachTK[i].id == id)
+        {
+            return i;
+        }
     }
-
-    printf("\n===================== DANH MỤC SÁCH (RÚT GỌN) =====================\n");
-    printf("%-10s %-30s %-20s %-8s %-8s\n",
-           "Mã sách", "Tên sách", "Tác giả", "Năm XB", "Hiện có");
-
-    for (int i = 0; i < so_luong_sach; i++)
-    {
-        // Sinh viên chỉ cần biết còn bao nhiêu bản để mượn nên không in các cột quản lý
-        printf("%-10s %-30s %-20s %-8d %-8d\n",
-               ds_sach[i].ma_sach, ds_sach[i].ten_sach, ds_sach[i].tac_gia,
-               ds_sach[i].nam_xb, ds_sach[i].tong_sl - ds_sach[i].da_muon);
-    }
+    return -1;
 }
 
-// 1.4.3 Danh sách sách đang mượn CỦA TÔI: lọc phiếu theo ID sinh viên đang đăng nhập
-void sach_toi_dang_muon()
+int timSachTheoMa(Sach *danhSachSach, int soluongSach, char *ma)
+{
+    for (int i = 0; i < soluongSach; i++)
+    {
+        if (strcmp(danhSachSach[i].maSach, ma) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int timPhieuDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu, int idSv, char *maSach)
+{
+    for (int i = 0; i < soluongPhieu; i++)
+    {
+        if (danhSachPhieu[i].idNguoiDung == idSv &&
+            strcmp(danhSachPhieu[i].maSach, maSach) == 0 &&
+            danhSachPhieu[i].trangThai == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int tenChuaTuKhoa(char *ten, char *tuKhoa)
+{
+    char tenThuong[150], tuKhoaThuong[150];
+    int i;
+
+    // Chuyen ca ten sach va tu khoa ve chu thuong roi moi strstr
+    // de "Co ban" khop voi "co ban" (khong phan biet hoa/thuong)
+    for (i = 0; ten[i] != '\0' && i < 149; i++)
+    {
+        tenThuong[i] = tolower(ten[i]);
+    }
+    tenThuong[i] = '\0';
+
+    for (i = 0; tuKhoa[i] != '\0' && i < 149; i++)
+    {
+        tuKhoaThuong[i] = tolower(tuKhoa[i]);
+    }
+    tuKhoaThuong[i] = '\0';
+
+    return strstr(tenThuong, tuKhoaThuong) != NULL;
+}
+
+void hienThiSinhVienMenu(Sach *danhSachSach, int soluongSach,
+                         PhieuMuon *danhSachPhieu, int soluongPhieu, TaiKhoan *tkHienTai)
+{
+    int choice = 0;
+    do
+    {
+        printf("\n===== MENU SINH VIEN =====\n");
+        printf("1. Danh sach sach\n");
+        printf("2. Tim kiem sach\n");
+        printf("3. Danh sach sach dang muon (cua toi)\n");
+        printf("4. Dang xuat\n");
+        printf("0. Thoat chuong trinh\n");
+        printf("Moi ban nhap vao lua chon: ");
+        if (scanf("%d", &choice) != 1)
+        {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF)
+            {
+            }
+            if (c == EOF)
+            {
+                tkHienTai->role = -2; // het du lieu nhap, thoat chuong trinh
+                return;
+            }
+            printf("Lua chon khong hop le! Vui long nhap vao so.\n");
+            choice = -1; // dat gia tri trung tinh de vong do-while tiep tuc chay
+            continue;
+        }
+        getchar();
+
+        switch (choice)
+        {
+        case 1:
+            hienThiDsSach(danhSachSach, soluongSach);
+            break;
+        case 2:
+            timKiemSach(danhSachSach, soluongSach);
+            break;
+        case 3:
+            sachToiDangMuon(danhSachPhieu, soluongPhieu, danhSachSach, soluongSach, tkHienTai);
+            break;
+        case 4:
+            tkHienTai->role = -1; // dang xuat, quay lai man hinh dang nhap
+            printf("Da dang xuat khoi he thong.\n");
+            break;
+        case 0:
+            tkHienTai->role = -2; // bao main biet nguoi dung muon thoat chuong trinh
+            break;
+        default:
+            printf("Lua chon khong hop le! Vui long chon lai.\n");
+        }
+    } while (choice != 4 && choice != 0);
+}
+
+void sachToiDangMuon(PhieuMuon *danhSachPhieu, int soluongPhieu,
+                     Sach *danhSachSach, int soluongSach, TaiKhoan *tkHienTai)
 {
     int co = 0;
-    int vt_sach;
+    int vtSach;
 
-    printf("\n================= SÁCH TÔI ĐANG MƯỢN =================\n");
+    printf("\n===== SACH TOI DANG MUON =====\n");
     printf("%-10s %-10s %-30s %-20s %-8s\n",
-           "Mã phiếu", "Mã sách", "Tên sách", "Tác giả", "Năm XB");
-
-    for (int i = 0; i < so_luong_phieu; i++)
+           "Ma phieu", "Ma sach", "Ten sach", "Tac gia", "Nam XB");
+    for (int i = 0; i < soluongPhieu; i++)
     {
-        // Chỉ lấy phiếu của chính sinh viên đang đăng nhập và còn đang mượn
-        if (ds_phieu_muon[i].id_nguoi_dung == id_dang_nhap && ds_phieu_muon[i].trang_thai == 0)
+        // Chi lay phieu cua chinh sinh vien dang dang nhap va con dang muon
+        if (danhSachPhieu[i].idNguoiDung == tkHienTai->id && danhSachPhieu[i].trangThai == 0)
         {
-            // Phiếu chỉ lưu mã sách nên phải tra lại mảng sách để lấy thông tin hiển thị
-            vt_sach = tim_sach_theo_ma(ds_sach, so_luong_sach, ds_phieu_muon[i].ma_sach);
-
-            if (vt_sach != -1)
+            // Phieu chi luu ma sach nen phai tra lai mang sach lay thong tin hien thi
+            vtSach = timSachTheoMa(danhSachSach, soluongSach, danhSachPhieu[i].maSach);
+            if (vtSach != -1)
             {
                 printf("%-10d %-10s %-30s %-20s %-8d\n",
-                       ds_phieu_muon[i].id_phieu,
-                       ds_sach[vt_sach].ma_sach,
-                       ds_sach[vt_sach].ten_sach,
-                       ds_sach[vt_sach].tac_gia,
-                       ds_sach[vt_sach].nam_xb);
+                       danhSachPhieu[i].idPhieu,
+                       danhSachSach[vtSach].maSach,
+                       danhSachSach[vtSach].tenSach,
+                       danhSachSach[vtSach].tacGia,
+                       danhSachSach[vtSach].namXb);
                 co = 1;
             }
         }
@@ -916,261 +996,411 @@ void sach_toi_dang_muon()
 
     if (!co)
     {
-        printf("Bạn hiện không đang mượn cuốn sách nào.\n");
+        printf("Ban hien khong dang muon cuon sach nao.\n");
     }
 }
 
-/* ==================== NHÓM HÀM QUẢN LÝ LUỒNG CHÍNH ==================== */
-
-// Khởi tạo dữ liệu ban đầu: tạo tài khoản Admin gốc (TEN_DANG_NHAP_MAC_DINH/MAT_KHAU_MAC_DINH) để đăng nhập lần đầu
-void khoi_tao_du_lieu()
+TaiKhoan *themTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, int *idTiepTheo)
 {
-    ds_nguoi_dung = malloc(sizeof(NguoiDung));
-    if (ds_nguoi_dung == NULL)
+    TaiKhoan tknew;
+    char username[50];
+
+    printf("Moi ban nhap vao username: ");
+    if (scanf("%s", username) == EOF)
     {
-        printf("Lỗi: Không cấp phát được bộ nhớ!\n");
-        exit(1);
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachTK;
+
     }
+    getchar();
 
-    ds_nguoi_dung[0].id = id_nguoi_dung_tiep_theo++;
-    strcpy(ds_nguoi_dung[0].ten_dang_nhap, TEN_DANG_NHAP_MAC_DINH);
-    strcpy(ds_nguoi_dung[0].mat_khau, MAT_KHAU_MAC_DINH);
-    ds_nguoi_dung[0].vai_tro = VAI_TRO_ADMIN;
-    so_luong_nguoi_dung = 1;
-}
-
-// Giải phóng toàn bộ bộ nhớ động của cả 3 mảng trước khi thoát chương trình
-void giai_phong_bo_nho()
-{
-    free(ds_nguoi_dung);
-    ds_nguoi_dung = NULL;
-    so_luong_nguoi_dung = 0;
-
-    free(ds_sach);
-    ds_sach = NULL;
-    so_luong_sach = 0;
-
-    free(ds_phieu_muon);
-    ds_phieu_muon = NULL;
-    so_luong_phieu = 0;
-
-    printf("Đã giải phóng toàn bộ bộ nhớ. Tạm biệt!\n");
-}
-
-// 1.1 Xử lý đăng nhập: kiểm tra tên tồn tại -> kiểm tra mật khẩu -> đọc vai trò
-void dang_nhap()
-{
-    char ten[50], mk[50];
-    int vt;
-
-    printf("\n==================== ĐĂNG NHẬP HỆ THỐNG ====================\n");
-    nhap_chuoi("Tên đăng nhập: ", ten, sizeof(ten));
-    nhap_chuoi("Mật khẩu: ", mk, sizeof(mk));
-
-    vt = tim_nguoi_dung_theo_ten(ds_nguoi_dung, so_luong_nguoi_dung, ten);
-    if (vt == -1)
+    // Ten dang nhap phai la duy nhat, trung thi huy ngay thao tac them
+    if (timTkTheoTen(danhSachTK, *soluongTK, username) != -1)
     {
-        printf("Lỗi: Tên đăng nhập không tồn tại.\n");
-        return;
+        printf("Loi: Ten dang nhap nay da duoc su dung.\n");
+        return danhSachTK;
     }
+    strcpy(tknew.username, username);
 
-    if (strcmp(ds_nguoi_dung[vt].mat_khau, mk) != 0)
-    {
-        printf("Lỗi: Sai mật khẩu.\n");
-        return;
-    }
-
-    // Đăng nhập thành công: ghi nhớ thông tin người dùng hiện tại vào biến toàn cục
-    id_dang_nhap = ds_nguoi_dung[vt].id;
-    vai_tro_dang_nhap = ds_nguoi_dung[vt].vai_tro;
-    da_dang_nhap = 1;
-
-    printf("Đăng nhập thành công! Xin chào \"%s\" với vai trò %s.\n",
-           ds_nguoi_dung[vt].ten_dang_nhap, ten_vai_tro(vai_tro_dang_nhap));
-}
-
-// 1.2 Menu Admin: quản lý các tài khoản trong hệ thống
-void menu_admin()
-{
-    int lua_chon;
+    printf("Moi ban nhap vao password: ");
+    fgets(tknew.password, sizeof(tknew.password), stdin);
+    tknew.password[strcspn(tknew.password, "\n")] = 0;
 
     do
     {
-        printf("\n========================= MENU ADMIN =========================\n");
-        printf("1. Hiển thị danh sách tài khoản\n");
-        printf("2. Thêm tài khoản\n");
-        printf("3. Xóa tài khoản\n");
-        printf("4. Sửa thông tin tài khoản\n");
-        printf("5. Reset mật khẩu\n");
-        printf("6. Đăng xuất\n");
-        printf("0. Thoát chương trình\n");
-        lua_chon = nhap_so_nguyen("Nhập lựa chọn của bạn: ");
-
-        switch (lua_chon)
+        printf("Moi ban nhap vao role (1 = Admin, 2 = Staff, 3 = Sinh vien): ");
+        if (scanf("%d", &tknew.role) != 1)
         {
-        case 1:
-            hien_thi_danh_sach_tai_khoan();
-            break;
-        case 2:
-            them_tai_khoan();
-            break;
-        case 3:
-            xoa_tai_khoan();
-            break;
-        case 4:
-            sua_tai_khoan();
-            break;
-        case 5:
-            reset_mat_khau();
-            break;
-        case 6:
-            // Đăng xuất: reset trạng thái để quay về màn hình đăng nhập
-            da_dang_nhap = 0;
-            id_dang_nhap = -1;
-            printf("Đã đăng xuất khỏi hệ thống.\n");
-            break;
-        case 0:
-            giai_phong_bo_nho();
-            exit(0);
-        default:
-            printf("Lựa chọn không hợp lệ! Vui lòng chọn lại.\n");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
         }
-    } while (da_dang_nhap); // Vòng lặp kết thúc khi người dùng chọn đăng xuất
-}
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachTK;
 
-// 1.3 Menu Staff (Thủ thư): quản lý sách và nghiệp vụ mượn/trả
-void menu_staff()
-{
-    int lua_chon;
+        }
+        getchar();
+        if (tknew.role < 1 || tknew.role > 3)
+        {
+            printf("Loi: Role chi duoc chon 1, 2 hoac 3.\n");
+        }
+    } while (tknew.role < 1 || tknew.role > 3);
 
-    do
+    // Mang day thi mo rong them 1 o (realloc co the CHUYEN mang sang dia chi moi
+    // nen ham phai return con tro moi cho main nhan lai)
+    if (*soluongTK >= *maxSizeTK)
     {
-        printf("\n========================= MENU THỦ THƯ =========================\n");
-        printf("1. Thêm sách mới\n");
-        printf("2. Hiển thị danh sách sách\n");
-        printf("3. Cập nhật thông tin sách\n");
-        printf("4. Xóa một cuốn sách\n");
-        printf("5. Tìm kiếm sách\n");
-        printf("6. Sắp xếp sách theo năm xuất bản\n");
-        printf("7. Cho mượn sách\n");
-        printf("8. Trả sách\n");
-        printf("9. Danh sách sách đang được mượn\n");
-        printf("10. Đăng xuất\n");
-        printf("0. Thoát chương trình\n");
-        lua_chon = nhap_so_nguyen("Nhập lựa chọn của bạn: ");
-
-        switch (lua_chon)
+        if (*maxSizeTK == 0)
         {
-        case 1:
-            them_sach();
-            break;
-        case 2:
-            hien_thi_danh_sach_sach();
-            break;
-        case 3:
-            cap_nhat_sach();
-            break;
-        case 4:
-            xoa_sach();
-            break;
-        case 5:
-            tim_kiem_sach();
-            break;
-        case 6:
-            sap_xep_sach();
-            break;
-        case 7:
-            muon_sach();
-            break;
-        case 8:
-            tra_sach();
-            break;
-        case 9:
-            hien_thi_sach_dang_muon();
-            break;
-        case 10:
-            da_dang_nhap = 0;
-            id_dang_nhap = -1;
-            printf("Đã đăng xuất khỏi hệ thống.\n");
-            break;
-        case 0:
-            giai_phong_bo_nho();
-            exit(0);
-        default:
-            printf("Lựa chọn không hợp lệ! Vui lòng chọn lại.\n");
-        }
-    } while (da_dang_nhap);
-}
-
-// 1.4 Menu Sinh viên: chỉ có quyền xem thông tin
-void menu_sinh_vien()
-{
-    int lua_chon;
-
-    do
-    {
-        printf("\n======================== MENU SINH VIÊN ========================\n");
-        printf("1. Danh sách sách\n");
-        printf("2. Tìm kiếm sách\n");
-        printf("3. Danh sách sách đang mượn (của tôi)\n");
-        printf("4. Đăng xuất\n");
-        printf("0. Thoát chương trình\n");
-        lua_chon = nhap_so_nguyen("Nhập lựa chọn của bạn: ");
-
-        switch (lua_chon)
-        {
-        case 1:
-            hien_thi_sach_co_ban();
-            break;
-        case 2:
-            tim_kiem_sach();
-            break;
-        case 3:
-            sach_toi_dang_muon();
-            break;
-        case 4:
-            da_dang_nhap = 0;
-            id_dang_nhap = -1;
-            printf("Đã đăng xuất khỏi hệ thống.\n");
-            break;
-        case 0:
-            giai_phong_bo_nho();
-            exit(0);
-        default:
-            printf("Lựa chọn không hợp lệ! Vui lòng chọn lại.\n");
-        }
-    } while (da_dang_nhap);
-}
-
-int main()
-{
-    khoi_tao_du_lieu();
-
-    printf("Chào mừng đến với Hệ thống Quản lý Thư viện!\n");
-
-    while (1)
-    {
-        // Chưa đăng nhập thì luôn quay lại màn hình đăng nhập trước tiên
-        if (!da_dang_nhap)
-        {
-            dang_nhap();
-            continue;
-        }
-
-        // Đọc vai trò của tài khoản vừa đăng nhập để chuyển đến menu tương ứng
-        if (vai_tro_dang_nhap == VAI_TRO_ADMIN)
-        {
-            menu_admin();
-        }
-        else if (vai_tro_dang_nhap == VAI_TRO_STAFF)
-        {
-            menu_staff();
+            *maxSizeTK = 5; // mang vua bi xoa trang thi cap phat lai tu dau
         }
         else
         {
-            menu_sinh_vien();
+            (*maxSizeTK)++;
+        }
+        danhSachTK = (TaiKhoan *)realloc(danhSachTK, *maxSizeTK * sizeof(TaiKhoan));
+    }
+
+    tknew.id = (*idTiepTheo)++; // id tu tang de moi tai khoan luon co id duy nhat
+    danhSachTK[*soluongTK] = tknew;
+    (*soluongTK)++;
+
+    printf("Da them tai khoan \"%s\" (ID = %d) thanh cong!\n", tknew.username, tknew.id);
+    return danhSachTK;
+}
+
+TaiKhoan *xoaTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, TaiKhoan *tkHienTai)
+{
+    char username[50];
+    char thongBao[200];
+    int vt;
+    char traLoi;
+
+    printf("Moi ban nhap vao username can xoa: ");
+    if (scanf("%s", username) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return danhSachTK;
+
+    }
+    getchar();
+
+    vt = timTkTheoTen(danhSachTK, *soluongTK, username);
+    if (vt == -1)
+    {
+        printf("Loi: Khong tim thay tai khoan.\n");
+        return danhSachTK;
+    }
+
+    // Tai khoan Admin goc (id = 1) va tai khoan dang dang nhap khong duoc phep xoa
+    if (danhSachTK[vt].id == 1)
+    {
+        printf("Loi: Khong the xoa tai khoan Admin goc cua he thong.\n");
+        return danhSachTK;
+    }
+    if (danhSachTK[vt].id == tkHienTai->id)
+    {
+        printf("Loi: Khong the tu xoa tai khoan ban dang dang nhap.\n");
+        return danhSachTK;
+    }
+
+    // Ghep cau hoi xac nhan dung theo mau de bai yeu cau
+    snprintf(thongBao, sizeof(thongBao), "Ban co chac muon xoa nguoi dung %s co vai tro %s (Y/N)? ",
+            danhSachTK[vt].username, tenVaiTro(danhSachTK[vt].role));
+    printf("%s", thongBao);
+    scanf("%c", &traLoi);
+    getchar();
+    if (traLoi != 'Y' && traLoi != 'y')
+    {
+        printf("Da huy viec xoa tai khoan.\n");
+        return danhSachTK;
+    }
+
+    // Doi cac phan tu phia sau len 1 vi tri de lap cho phan tu bi xoa
+    for (int i = vt; i < *soluongTK - 1; i++)
+    {
+        danhSachTK[i] = danhSachTK[i + 1];
+    }
+    (*soluongTK)--;
+
+    if (*soluongTK == 0)
+    {
+        free(danhSachTK); // xoa het thi tra vung nho, mang ve lai NULL
+        danhSachTK = NULL;
+        *maxSizeTK = 0;
+    }
+    else
+    {
+        // Thu nho mang dung bang so phan tu con lai
+        *maxSizeTK = *soluongTK;
+        danhSachTK = (TaiKhoan *)realloc(danhSachTK, *maxSizeTK * sizeof(TaiKhoan));
+    }
+
+    printf("Da xoa tai khoan thanh cong!\n");
+    return danhSachTK;
+}
+
+void suaTk(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkHienTai)
+{
+    char username[50];
+    int vt, choice, roleMoi;
+
+    printf("Moi ban nhap vao username can sua: ");
+    if (scanf("%s", username) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+    }
+    getchar();
+
+    vt = timTkTheoTen(danhSachTK, soluongTK, username);
+    if (vt == -1)
+    {
+        printf("Loi: Khong tim thay tai khoan.\n");
+        return;
+    }
+
+    printf("Da tim thay tai khoan: ID = %d | %s | Vai tro: %s\n",
+           danhSachTK[vt].id, danhSachTK[vt].username, tenVaiTro(danhSachTK[vt].role));
+
+    printf("1. Sua vai tro\n");
+    printf("2. Sua mat khau\n");
+    printf("Moi ban nhap vao lua chon: ");
+    if (scanf("%d", &choice) != 1)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+    }
+    getchar();
+
+    if (choice == 1)
+    {
+        do
+        {
+            printf("Moi ban nhap vao role moi (1 = Admin, 2 = Staff, 3 = Sinh vien): ");
+            if (scanf("%d", &roleMoi) != 1)
+            {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+            }
+            getchar();
+            if (roleMoi < 1 || roleMoi > 3)
+            {
+                printf("Loi: Role chi duoc chon 1, 2 hoac 3.\n");
+            }
+        } while (roleMoi < 1 || roleMoi > 3);
+
+        danhSachTK[vt].role = roleMoi;
+
+        // Neu admin tu sua vai tro cua chinh minh thi phai cap nhat luon tkHienTai
+        if (danhSachTK[vt].id == tkHienTai->id)
+        {
+            tkHienTai->role = roleMoi;
+        }
+    }
+    else if (choice == 2)
+    {
+        printf("Moi ban nhap vao mat khau moi: ");
+        fgets(danhSachTK[vt].password, sizeof(danhSachTK[vt].password), stdin);
+        danhSachTK[vt].password[strcspn(danhSachTK[vt].password, "\n")] = 0;
+    }
+    else
+    {
+        printf("Lua chon khong hop le!\n");
+        return;
+    }
+
+    printf("Cap nhat thanh cong!\n");
+}
+
+void resetMatKhau(TaiKhoan *danhSachTK, int soluongTK)
+{
+    char username[50];
+    int vt;
+
+    printf("Moi ban nhap vao username can reset mat khau: ");
+    if (scanf("%s", username) == EOF)
+    {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF)
+        {
+        }
+        printf("Du lieu khong hop le! Huy thao tac.\n");
+        return;
+
+    }
+    getchar();
+
+    vt = timTkTheoTen(danhSachTK, soluongTK, username);
+    if (vt == -1)
+    {
+        printf("Loi: Khong tim thay tai khoan.\n");
+        return;
+    }
+
+    strcpy(danhSachTK[vt].password, "123456");
+    printf("Da reset mat khau cua \"%s\" ve \"123456\" thanh cong!\n", username);
+}
+
+void hienThiDsTk(TaiKhoan *danhSachTK, int soluongTK)
+{
+    if (soluongTK == 0)
+    {
+        printf("Chua co tai khoan nao trong he thong.\n");
+        return;
+    }
+
+    printf("\n===== DANH SACH TAI KHOAN =====\n");
+    printf("%-5s %-25s %-15s\n", "Id", "Username", "Role");
+    for (int i = 0; i < soluongTK; i++)
+    {
+        printf("%-5d %-25s %-15s\n",
+               danhSachTK[i].id, danhSachTK[i].username, tenVaiTro(danhSachTK[i].role));
+    }
+}
+
+void hienThiDsSv(TaiKhoan *danhSachTK, int soluongTK, PhieuMuon *danhSachPhieu, int soluongPhieu)
+{
+    int co = 0;
+    int dangMuon;
+
+    printf("\n===== DANH SACH SINH VIEN =====\n");
+    printf("%-5s %-25s %-12s\n", "Id", "Username", "Dang muon");
+    for (int i = 0; i < soluongTK; i++)
+    {
+        // Chi loc nhung tai khoan co role la Sinh vien
+        if (danhSachTK[i].role == 3)
+        {
+            // Dem so phieu con "dang muon" cua sinh vien nay de Thu thu theo doi
+            dangMuon = 0;
+            for (int j = 0; j < soluongPhieu; j++)
+            {
+                if (danhSachPhieu[j].idNguoiDung == danhSachTK[i].id && danhSachPhieu[j].trangThai == 0)
+                {
+                    dangMuon++;
+                }
+            }
+
+            printf("%-5d %-25s %-12d\n", danhSachTK[i].id, danhSachTK[i].username, dangMuon);
+            co = 1;
         }
     }
 
-    return 0;
+    if (!co)
+    {
+        printf("Chua co sinh vien nao trong he thong.\n");
+    }
+}
+
+char *tenVaiTro(int role)
+{
+    if (role == 1)
+    {
+        return "Admin";
+    }
+    if (role == 2)
+    {
+        return "Thu thu";
+    }
+    if (role == 3)
+    {
+        return "Sinh vien";
+    }
+    return "Khong hop le";
+}
+
+int timTkTheoTen(TaiKhoan *danhSachTK, int soluongTK, char *ten)
+{
+    for (int i = 0; i < soluongTK; i++)
+    {
+        if (strcmp(danhSachTK[i].username, ten) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void themTkMacDinh(TaiKhoan *danhSachTK, int *soluongTK)
+{
+    TaiKhoan tk1;
+    tk1.id = 1;
+    strcpy(tk1.username, "admin");
+    strcpy(tk1.password, "123456");
+    tk1.role = 1;
+
+    TaiKhoan tk2;
+    tk2.id = 2;
+    strcpy(tk2.username, "staff");
+    strcpy(tk2.password, "123456");
+    tk2.role = 2;
+
+    danhSachTK[0] = tk1;
+    danhSachTK[1] = tk2;
+
+    *soluongTK += 2;
+}
+
+void dangnhap(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkhientai)
+{
+    char user[50];
+    char pass[50];
+    int vt;
+    int check = 0;
+
+    printf("\n===== DANG NHAP =====\n");
+    do
+    {
+        printf("Nhap username: ");
+        if (scanf("%s", user) == EOF)
+        {
+            tkhientai->role = -2; // het du lieu nhap, bao main thoat chuong trinh
+            return;
+        }
+        getchar();
+
+        printf("Nhap password: ");
+        fgets(pass, sizeof(pass), stdin);
+        pass[strcspn(pass, "\n")] = 0;
+
+        vt = timTkTheoTen(danhSachTK, soluongTK, user);
+        if (vt == -1)
+        {
+            printf("Loi: Ten dang nhap khong ton tai.\n");
+        }
+        else if (strcmp(danhSachTK[vt].password, pass) != 0)
+        {
+            printf("Loi: Sai mat khau.\n");
+        }
+        else
+        {
+            *tkhientai = danhSachTK[vt]; // dang nhap thanh cong, luu tai khoan hien tai
+            printf("Dang nhap thanh cong! Xin chao \"%s\" voi vai tro %s.\n",
+                   tkhientai->username, tenVaiTro(tkhientai->role));
+            check = 1;
+        }
+    } while (check != 1);
 }
