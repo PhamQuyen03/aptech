@@ -1,14 +1,8 @@
-/*
- * BAI TAP LON - HE THONG QUAN LY TRUNG TAM TIN HOC
- * Khong su dung bien toan cuc, quan ly bo nho bang mang dong malloc/realloc/free
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-// Struct Nguoi dung / Tai khoan
 typedef struct TaiKhoan
 {
     int id;
@@ -17,29 +11,28 @@ typedef struct TaiKhoan
     int role; // 1 = Admin, 2 = Teacher (Giao vien), 3 = Student (Hoc vien)
 } TaiKhoan;
 
-// Struct Khoa hoc
 typedef struct KhoaHoc
 {
     char maKhoaHoc[30]; // Ma khoa hoc, duy nhat
     char tenKhoaHoc[100];
-    int idGiaoVien;   // ID giao vien phu trach (role = 2, 0 neu chua phan cong)
-    int siSoToiDa;    // Si so toi da cua lop hoc
-    int siSoDaDangKy; // Si so da dang ky hien tai (khoi tao = 0)
+    int idGiaoVien; // ID giao vien phu trach (role = 2, 0 neu chua phan cong)
+    int siSoToiDa;
+    int siSoDaDangKy;
 } KhoaHoc;
 
-// Struct Dang ky
 typedef struct DangKy
 {
-    int idDangKy;       // So dang ky tu tang
-    int idHocVien;      // ID hoc vien
-    char maKhoaHoc[30]; // Ma khoa hoc
-    int trangThai;      // 0 = Dang hoc, 1 = Da hoan thanh
+    int idDangKy;
+    int idHocVien;
+    char maKhoaHoc[30];
+    int trangThai; // 0 = Dang hoc, 1 = Da hoan thanh
 } DangKy;
 
 // ==================== KHAI BAO NGUYEN MAU HAM ====================
 
 void themTkMacDinh(TaiKhoan *danhSachTK, int *soluongTK);
 void themKhoaHocMacDinh(KhoaHoc *danhSachKH, int *soluongKH);
+void themDangKyMacDinh(DangKy *danhSachDK, int *soluongDK);
 void dangnhap(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkHienTai);
 char *tenVaiTro(int role);
 int timTkTheoTen(TaiKhoan *danhSachTK, int soluongTK, char *ten);
@@ -68,6 +61,21 @@ void suaKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int so
 KhoaHoc *xoaKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH);
 void sapXepKhoaHocGiamDanSiSo(KhoaHoc *danhSachKH, int soluongKH);
 void hienThiDsKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int soluongTK);
+
+// Menu Teacher (Giao vien)
+void hienThiTeacherMenu(KhoaHoc *danhSachKH, int soluongKH,
+                        DangKy *danhSachDK, int soluongDK,
+                        TaiKhoan *danhSachTK, int soluongTK,
+                        TaiKhoan *tkHienTai);
+void xemLopHocCuaToi(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *tkHienTai);
+void xemDsHocVienCuaLop(KhoaHoc *danhSachKH, int soluongKH,
+                        DangKy *danhSachDK, int soluongDK,
+                        TaiKhoan *danhSachTK, int soluongTK,
+                        TaiKhoan *tkHienTai);
+void capNhatTrangThaiHoanThanh(KhoaHoc *danhSachKH, int soluongKH,
+                               DangKy *danhSachDK, int soluongDK,
+                               TaiKhoan *danhSachTK, int soluongTK,
+                               TaiKhoan *tkHienTai);
 
 // ==================== HAM MAIN ====================
 
@@ -107,6 +115,7 @@ int main()
     // Khoi tao du lieu ban dau (Admin goc va mau du lieu de kiem thu)
     themTkMacDinh(danhSachTK, &soluongTK);
     themKhoaHocMacDinh(danhSachKH, &soluongKH);
+    themDangKyMacDinh(danhSachDK, &soluongDK);
 
     printf("====================================================\n");
     printf("  CHAO MUNG DEN VOI HE THONG QUAN LY TRUNG TAM TIN HOC\n");
@@ -131,6 +140,12 @@ int main()
             break;
 
         case 2: // Vai tro Teacher (Giao vien)
+            hienThiTeacherMenu(danhSachKH, soluongKH,
+                               danhSachDK, soluongDK,
+                               danhSachTK, soluongTK,
+                               &tkHienTai);
+            break;
+
         case 3: // Vai tro Student (Hoc vien)
             printf("\nMenu cua vai tro \"%s\" se duoc xay dung o giai doan sau. Tam thoi dang xuat.\n",
                    tenVaiTro(tkHienTai.role));
@@ -138,7 +153,7 @@ int main()
             break;
         }
 
-        // role = -2 nghia la nguoi dung chon "Thoat chuong trinh" hoac gap EOF
+        // role = -2 nghia la nguoi dung chon "Thoat chuong trinh"
         if (tkHienTai.role == -2)
         {
             break;
@@ -253,15 +268,13 @@ void themTkMacDinh(TaiKhoan *danhSachTK, int *soluongTK)
 
 void themKhoaHocMacDinh(KhoaHoc *danhSachKH, int *soluongKH)
 {
-    // Khoa hoc mau 1
     KhoaHoc kh1;
     strcpy(kh1.maKhoaHoc, "C_BASIC");
     strcpy(kh1.tenKhoaHoc, "Lap trinh C Co ban");
     kh1.idGiaoVien = 2; // Giao vien ID 2
     kh1.siSoToiDa = 30;
-    kh1.siSoDaDangKy = 0;
+    kh1.siSoDaDangKy = 1; // student1 (ID 3) da dang ky
 
-    // Khoa hoc mau 2
     KhoaHoc kh2;
     strcpy(kh2.maKhoaHoc, "PYTHON_ADV");
     strcpy(kh2.tenKhoaHoc, "Lap trinh Python Nang cao");
@@ -273,6 +286,19 @@ void themKhoaHocMacDinh(KhoaHoc *danhSachKH, int *soluongKH)
     danhSachKH[1] = kh2;
 
     *soluongKH = 2;
+}
+
+void themDangKyMacDinh(DangKy *danhSachDK, int *soluongDK)
+{
+    // student1 (ID 3) dang hoc lop C_BASIC cua teacher1 (ID 2)
+    DangKy dk1;
+    dk1.idDangKy = 1;
+    dk1.idHocVien = 3;
+    strcpy(dk1.maKhoaHoc, "C_BASIC");
+    dk1.trangThai = 0; // 0 = Dang hoc
+
+    danhSachDK[0] = dk1;
+    *soluongDK = 1;
 }
 
 // ==================== DANG NHAP ====================
@@ -288,12 +314,8 @@ void dangnhap(TaiKhoan *danhSachTK, int soluongTK, TaiKhoan *tkHienTai)
     do
     {
         printf("Nhap ten dang nhap: ");
-        if (scanf("%s", user) == EOF)
-        {
-            tkHienTai->role = -2; // Het du lieu stdin, bao main thoat chuong trinh
-            return;
-        }
-        getchar(); // Xoa ky tu newline con sot sau scanf
+        scanf("%s", user);
+        getchar();
 
         printf("Nhap mat khau: ");
         if (fgets(pass, sizeof(pass), stdin) == NULL)
@@ -416,15 +438,7 @@ TaiKhoan *themTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, int *idTi
 
     printf("\n--- THEM TAI KHOAN MOI ---\n");
     printf("Moi ban nhap vao ten dang nhap: ");
-    if (scanf("%s", username) == EOF)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return danhSachTK;
-    }
+    scanf("%s", username);
     getchar();
 
     // Kiem tra tinh duy nhat cua ten dang nhap
@@ -446,15 +460,7 @@ TaiKhoan *themTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK, int *idTi
     do
     {
         printf("Moi ban nhap vai tro (1 = Admin, 2 = Teacher, 3 = Student): ");
-        if (scanf("%d", &tkNew.role) != 1)
-        {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            printf("Du lieu khong hop le! Vui long nhap so.\n");
-            continue;
-        }
+        scanf("%d", &tkNew.role);
         getchar();
 
         if (tkNew.role < 1 || tkNew.role > 3)
@@ -503,15 +509,7 @@ TaiKhoan *xoaTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK,
 
     printf("\n--- XOA TAI KHOAN ---\n");
     printf("Moi ban nhap ten dang nhap can xoa: ");
-    if (scanf("%s", username) == EOF)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return danhSachTK;
-    }
+    scanf("%s", username);
     getchar();
 
     vt = timTkTheoTen(danhSachTK, *soluongTK, username);
@@ -535,7 +533,6 @@ TaiKhoan *xoaTk(TaiKhoan *danhSachTK, int *soluongTK, int *maxSizeTK,
         return danhSachTK;
     }
 
-    // Hien thi thong tin tai khoan can xoa
     printf("\nThong tin tai khoan can xoa:\n");
     printf("  - ID:            %d\n", danhSachTK[vt].id);
     printf("  - Ten dang nhap: %s\n", danhSachTK[vt].username);
@@ -663,15 +660,7 @@ KhoaHoc *themKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH,
 
     printf("\n--- THEM KHOA HOC MOI ---\n");
     printf("Moi ban nhap ma khoa hoc (duy nhat): ");
-    if (scanf("%s", ma) == EOF)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return danhSachKH;
-    }
+    scanf("%s", ma);
     getchar();
 
     // Kiem tra ma khoa hoc duy nhat
@@ -694,15 +683,7 @@ KhoaHoc *themKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH,
     do
     {
         printf("Moi ban nhap ID cua giao vien phu trach: ");
-        if (scanf("%d", &khNew.idGiaoVien) != 1)
-        {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            printf("Du lieu khong hop le! Vui long nhap so.\n");
-            continue;
-        }
+        scanf("%d", &khNew.idGiaoVien);
         getchar();
 
         int vtGv = timTkTheoId(danhSachTK, soluongTK, khNew.idGiaoVien);
@@ -727,15 +708,7 @@ KhoaHoc *themKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH,
     do
     {
         printf("Moi ban nhap si so toi da cua khoa hoc: ");
-        if (scanf("%d", &khNew.siSoToiDa) != 1)
-        {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            printf("Du lieu khong hop le! Vui long nhap so.\n");
-            continue;
-        }
+        scanf("%d", &khNew.siSoToiDa);
         getchar();
 
         if (khNew.siSoToiDa <= 0)
@@ -781,15 +754,7 @@ void suaKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int so
 
     printf("\n--- SUA THONG TIN KHOA HOC ---\n");
     printf("Moi ban nhap ma khoa hoc can sua: ");
-    if (scanf("%s", ma) == EOF)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return;
-    }
+    scanf("%s", ma);
     getchar();
 
     vt = timKhoaHocTheoMa(danhSachKH, soluongKH, ma);
@@ -809,15 +774,7 @@ void suaKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int so
     printf("3. Si so toi da\n");
     printf("Moi ban chon thong tin muon sua (1-3): ");
 
-    if (scanf("%d", &choice) != 1)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return;
-    }
+    scanf("%d", &choice);
     getchar();
 
     switch (choice)
@@ -840,15 +797,7 @@ void suaKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int so
     {
         int idGvMoi;
         printf("Moi ban nhap ID giao vien moi: ");
-        if (scanf("%d", &idGvMoi) != 1)
-        {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            printf("Du lieu khong hop le! Huy thao tac.\n");
-            return;
-        }
+        scanf("%d", &idGvMoi);
         getchar();
 
         // Kiem tra ID giao vien moi co ton tai va dung la Giao vien (role == 2) khong
@@ -876,15 +825,7 @@ void suaKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, int so
         do
         {
             printf("Moi ban nhap si so toi da moi: ");
-            if (scanf("%d", &siSoMoi) != 1)
-            {
-                int c;
-                while ((c = getchar()) != '\n' && c != EOF)
-                {
-                }
-                printf("Du lieu khong hop le! Huy thao tac.\n");
-                return;
-            }
+            scanf("%d", &siSoMoi);
             getchar();
 
             // Rang buoc: khong duoc nho hon si so da dang ky hien tai
@@ -917,15 +858,7 @@ KhoaHoc *xoaKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH)
 
     printf("\n--- XOA KHOA HOC ---\n");
     printf("Moi ban nhap ma khoa hoc can xoa: ");
-    if (scanf("%s", ma) == EOF)
-    {
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-        }
-        printf("Du lieu khong hop le! Huy thao tac.\n");
-        return danhSachKH;
-    }
+    scanf("%s", ma);
     getchar();
 
     vt = timKhoaHocTheoMa(danhSachKH, *soluongKH, ma);
@@ -1047,4 +980,208 @@ void hienThiDsKhoaHoc(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *danhSachTK, 
                danhSachKH[i].siSoDaDangKy);
     }
     printf("Tong cong: %d khoa hoc.\n", soluongKH);
+}
+
+// ==================== MENU TEACHER (GIAO VIEN) ====================
+
+void hienThiTeacherMenu(KhoaHoc *danhSachKH, int soluongKH,
+                        DangKy *danhSachDK, int soluongDK,
+                        TaiKhoan *danhSachTK, int soluongTK,
+                        TaiKhoan *tkHienTai)
+{
+    int choice = 0;
+    do
+    {
+        printf("\n================ MENU GIAO VIEN ================\n");
+        printf("1. Xem lop hoc cua toi\n");
+        printf("2. Xem danh sach hoc vien cua lop\n");
+        printf("3. Cap nhat trang thai hoan thanh\n");
+        printf("4. Dang xuat\n");
+        printf("0. Thoat chuong trinh\n");
+        printf("Moi ban nhap vao lua chon: ");
+
+        scanf("%d", &choice);
+        getchar();
+
+        switch (choice)
+        {
+        case 1:
+            xemLopHocCuaToi(danhSachKH, soluongKH, tkHienTai);
+            break;
+        case 2:
+            xemDsHocVienCuaLop(danhSachKH, soluongKH, danhSachDK, soluongDK, danhSachTK, soluongTK, tkHienTai);
+            break;
+        case 3:
+            capNhatTrangThaiHoanThanh(danhSachKH, soluongKH, danhSachDK, soluongDK, danhSachTK, soluongTK, tkHienTai);
+            break;
+        case 4:
+            tkHienTai->role = -1; // Dang xuat
+            printf("Da dang xuat khoi he thong.\n");
+            break;
+        case 0:
+            tkHienTai->role = -2; // Thoat chuong trinh
+            break;
+        default:
+            printf("Lua chon khong hop le! Vui long chon lai.\n");
+        }
+    } while (choice != 4 && choice != 0);
+}
+
+void xemLopHocCuaToi(KhoaHoc *danhSachKH, int soluongKH, TaiKhoan *tkHienTai)
+{
+    int count = 0;
+    printf("\n===== CAC LOP HOC CUA TOI (GIAO VIEN: %s - ID: %d) =====\n",
+           tkHienTai->username, tkHienTai->id);
+    printf("%-12s %-32s %-12s %-12s\n",
+           "Ma KH", "Ten khoa hoc", "Si so toi da", "Da dang ky");
+    printf("-----------------------------------------------------------------------\n");
+
+    for (int i = 0; i < soluongKH; i++)
+    {
+        if (danhSachKH[i].idGiaoVien == tkHienTai->id)
+        {
+            printf("%-12s %-32s %-12d %-12d\n",
+                   danhSachKH[i].maKhoaHoc,
+                   danhSachKH[i].tenKhoaHoc,
+                   danhSachKH[i].siSoToiDa,
+                   danhSachKH[i].siSoDaDangKy);
+            count++;
+        }
+    }
+
+    if (count == 0)
+    {
+        printf("(Hien ban chua duoc phan cong phu trach lop hoc nao)\n");
+    }
+    else
+    {
+        printf("Tong cong: %d lop hoc.\n", count);
+    }
+}
+
+void xemDsHocVienCuaLop(KhoaHoc *danhSachKH, int soluongKH,
+                        DangKy *danhSachDK, int soluongDK,
+                        TaiKhoan *danhSachTK, int soluongTK,
+                        TaiKhoan *tkHienTai)
+{
+    char maKH[30];
+    printf("\n--- XEM DANH SACH HOC VIEN CUA LOP ---\n");
+    printf("Moi ban nhap ma khoa hoc: ");
+    scanf("%s", maKH);
+    getchar();
+
+    int vtKH = timKhoaHocTheoMa(danhSachKH, soluongKH, maKH);
+    if (vtKH == -1)
+    {
+        printf("Loi: Ma khoa hoc \"%s\" khong ton tai tren he thong!\n", maKH);
+        return;
+    }
+
+    // Kiem tra phai la lop cua giao vien dang dang nhap
+    if (danhSachKH[vtKH].idGiaoVien != tkHienTai->id)
+    {
+        printf("Loi: Ban khong phu trach khoa hoc \"%s\"! Chi co the xem hoc vien cua lop do ban phu trach.\n", maKH);
+        return;
+    }
+
+    printf("\n===== DANH SACH HOC VIEN DANG HOC - KHOA HOC [%s] %s =====\n",
+           danhSachKH[vtKH].maKhoaHoc, danhSachKH[vtKH].tenKhoaHoc);
+    printf("%-10s %-12s %-25s %-15s\n",
+           "ID DangKy", "ID Hoc vien", "Ten hoc vien", "Trang thai");
+    printf("------------------------------------------------------------------\n");
+
+    int count = 0;
+    for (int i = 0; i < soluongDK; i++)
+    {
+        if (strcmp(danhSachDK[i].maKhoaHoc, maKH) == 0 && danhSachDK[i].trangThai == 0)
+        {
+            int vtHv = timTkTheoId(danhSachTK, soluongTK, danhSachDK[i].idHocVien);
+            char tenHv[50] = "Khong xac dinh";
+            if (vtHv != -1)
+            {
+                strcpy(tenHv, danhSachTK[vtHv].username);
+            }
+
+            printf("%-10d %-12d %-25s %-15s\n",
+                   danhSachDK[i].idDangKy,
+                   danhSachDK[i].idHocVien,
+                   tenHv,
+                   "Dang hoc");
+            count++;
+        }
+    }
+
+    if (count == 0)
+    {
+        printf("(Khong co hoc vien nao dang hoc tai lop nay)\n");
+    }
+    else
+    {
+        printf("Tong cong: %d hoc vien dang hoc.\n", count);
+    }
+}
+
+void capNhatTrangThaiHoanThanh(KhoaHoc *danhSachKH, int soluongKH,
+                               DangKy *danhSachDK, int soluongDK,
+                               TaiKhoan *danhSachTK, int soluongTK,
+                               TaiKhoan *tkHienTai)
+{
+    char maKH[30];
+    int idHocVien;
+
+    printf("\n--- CAP NHAT TRANG THAI HOAN THANH KHOA HOC ---\n");
+    printf("Moi ban nhap ma khoa hoc: ");
+    scanf("%s", maKH);
+    getchar();
+
+    int vtKH = timKhoaHocTheoMa(danhSachKH, soluongKH, maKH);
+    if (vtKH == -1)
+    {
+        printf("Loi: Ma khoa hoc \"%s\" khong ton tai tren he thong!\n", maKH);
+        return;
+    }
+
+    // Kiem tra phai la lop cua giao vien dang dang nhap
+    if (danhSachKH[vtKH].idGiaoVien != tkHienTai->id)
+    {
+        printf("Loi: Ban khong phu trach khoa hoc \"%s\"! Chi co the cap nhat hoc vien cua lop minh phu trach.\n", maKH);
+        return;
+    }
+
+    printf("Moi ban nhap ID hoc vien can cap nhat: ");
+    scanf("%d", &idHocVien);
+    getchar();
+
+    // Tim ban ghi dang ky voi maKhoaHoc, idHocVien va trangThai == 0 (Dang hoc)
+    int vtDK = -1;
+    for (int i = 0; i < soluongDK; i++)
+    {
+        if (strcmp(danhSachDK[i].maKhoaHoc, maKH) == 0 &&
+            danhSachDK[i].idHocVien == idHocVien &&
+            danhSachDK[i].trangThai == 0)
+        {
+            vtDK = i;
+            break;
+        }
+    }
+
+    if (vtDK == -1)
+    {
+        printf("Loi: Khong tim thay ban ghi dang ky (o trang thai \"Dang hoc\") cua hoc vien ID %d tai khoa hoc \"%s\"!\n",
+               idHocVien, maKH);
+        return;
+    }
+
+    // Doi trang thai thanh 1 ("Da hoan thanh")
+    danhSachDK[vtDK].trangThai = 1;
+
+    int vtHv = timTkTheoId(danhSachTK, soluongTK, idHocVien);
+    char tenHv[50] = "";
+    if (vtHv != -1)
+    {
+        snprintf(tenHv, sizeof(tenHv), " \"%s\"", danhSachTK[vtHv].username);
+    }
+
+    printf(">> Cap nhat thanh cong! Hoc vien%s (ID: %d) tai khoa hoc \"%s\" da chuyen sang trang thai \"Da hoan thanh\".\n",
+           tenHv, idHocVien, maKH);
 }
