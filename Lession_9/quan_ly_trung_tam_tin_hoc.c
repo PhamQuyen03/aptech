@@ -923,18 +923,22 @@ KhoaHoc *xoaKhoaHoc(KhoaHoc *danhSachKH, int *soluongKH, int *maxSizeKH)
 
 void sapXepKhoaHocGiamDanSiSo(KhoaHoc *danhSachKH, int soluongKH)
 {
-    // Sap xep giam dan theo si so toi da su dung Bubble Sort
-    KhoaHoc temp;
+    // Sap xep giam dan theo si so toi da su dung Selection Sort
     for (int i = 0; i < soluongKH - 1; i++)
     {
-        for (int j = 0; j < soluongKH - 1 - i; j++)
+        int maxIndex = i;
+        for (int j = i + 1; j < soluongKH; j++)
         {
-            if (danhSachKH[j].siSoToiDa < danhSachKH[j + 1].siSoToiDa)
+            if (danhSachKH[j].siSoToiDa > danhSachKH[maxIndex].siSoToiDa)
             {
-                temp = danhSachKH[j];
-                danhSachKH[j] = danhSachKH[j + 1];
-                danhSachKH[j + 1] = temp;
+                maxIndex = j;
             }
+        }
+        if (maxIndex != i)
+        {
+            KhoaHoc temp = danhSachKH[i];
+            danhSachKH[i] = danhSachKH[maxIndex];
+            danhSachKH[maxIndex] = temp;
         }
     }
 }
