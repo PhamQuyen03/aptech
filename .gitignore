@@ -1,6 +1,17 @@
+# Mac OS
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# C Build & Debug artifacts
 *.dSYM/
 *.o
+*.out
+*.exe
+
+# Compiled executables
 student_app
 bubble_sort
 Ex_2
+test_*
